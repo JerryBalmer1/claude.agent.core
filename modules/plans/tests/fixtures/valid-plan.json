@@ -1,0 +1,9 @@
+{
+  "id": "substrate-phase-3-valid",
+  "steps": [
+    { "action": "read the run order", "expected_output": "the phase list" },
+    { "action": "port the suite", "expected_output": "one It per check" }
+  ],
+  "expected_output": "a plans module with one export",
+  "skills_to_build": ["a-skill-that-does-not-exist"]
+}

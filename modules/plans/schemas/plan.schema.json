@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgentPlan",
+  "type": "object",
+  "required": ["id", "steps", "expected_output"],
+  "properties": {
+    "id": { "type": "string" },
+    "steps": { "type": "array", "minItems": 1 },
+    "expected_output": { "type": "string" },
+    "skills_to_build": { "type": "array", "items": { "type": "string" } }
+  }
+}

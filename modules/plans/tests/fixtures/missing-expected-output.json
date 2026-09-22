@@ -1,0 +1,6 @@
+{
+  "id": "substrate-phase-3-missing-expected-output",
+  "steps": [
+    { "action": "read the run order" }
+  ]
+}

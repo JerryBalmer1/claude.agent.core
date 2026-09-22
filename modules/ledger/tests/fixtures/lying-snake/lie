@@ -1,0 +1,33 @@
+#!/usr/bin/env pwsh
+#
+# The lying snake, the non-Windows half. FINDINGS.md F44 TEST 10.
+#
+# EXTENSIONLESS ON PURPOSE, and not the lie.ps1 the run order asked for. Invoke-LedgerForce
+# resolves -PythonPath with `Get-Command -CommandType Application`, and a .ps1 is an
+# ExternalScript on every platform -- never an Application -- so a lie.ps1 would not be found at
+# all and the force would die as LedgerPythonMissing, proving nothing. A file with no PowerShell
+# extension and the execute bit IS an Application. The execute bit is carried in the tree via
+# `git update-index --chmod=+x`.
+#
+# THE PAYLOAD IS EMBEDDED, and that is not duplication for its own sake. Measured on
+# ubuntu-latest: when the kernel resolves this file's shebang, pwsh runs the script with
+# $PSScriptRoot AND $PSCommandPath both EMPTY, so there is no way for the script to find a file
+# sitting next to itself. Two CI runs died on that -- the first silently, exiting 0 with nothing
+# on stdout, which the module can only report as LedgerNoResult.
+#
+# result-mismatch.ndjson is still the single source of truth: lie.cmd prints it with
+# `type "%~dp0..."`, and the It in ledger.Tests.ps1 runs THIS file and asserts its output is
+# byte-equal to that file's one line. If the two ever drift, that It goes red.
+#
+# $ErrorActionPreference = 'Stop' so that a stub which fails for some new reason exits NON-ZERO
+# and surfaces as LedgerSnakeFailed carrying the reason, rather than exiting 0 and looking like
+# a snake with nothing to say. [Console]::Out.Write so the bytes reach stdout with no output
+# formatter, no wrapping at the host's idea of a console width, and no appended newline beyond
+# the one written here.
+#
+# Ignores argv and stdin. One line out, exit 0.
+$ErrorActionPreference = 'Stop'
+
+$event = '{"v": 1, "type": "result", "ok": true, "output": "def add(a, b):\n    return a + b\n", "attempts": 1, "sha256": "ba1a531f581d2e6094e978ed6f7aca7a8d92eeb62c6e7ad73ee692f7f18bc772", "reason": "stub", "validator": "non_empty", "model": "stub-model", "mode": "live"}'
+
+[Console]::Out.Write($event + "`n")

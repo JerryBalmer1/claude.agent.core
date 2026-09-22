@@ -1,0 +1,96 @@
+# One job per entry in config/repo.json -> required_checks.
+#
+# The job KEY is the check name, and no job sets `name:`. That is deliberate: when a job has no
+# display name, GitHub reports the check run under the job key, so the names the automerge
+# workflow matches on are exactly the strings in config/repo.json. Adding a `name:` here would
+# silently rename the check and automerge would wait forever for a check that never reports.
+#
+# The `generated-match-config` job asserts that the set of job keys below equals
+# config.required_checks, so this file cannot drift from the config without going red.
+#
+# No inline bash anywhere. Every step is `shell: pwsh` calling a script in scripts/.
+name: ci
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+jobs:
+  # Two steps, one check name. The job key is the string GitHub reports and the automerge
+  # workflow waits on, and generated-match-config asserts the set of job keys equals
+  # config.required_checks — so a second runtime rule arrives as a step here, not as a seventh
+  # job. A newly required check that branch protection has never seen is a check that can go
+  # red while the merge proceeds anyway.
+  requires-header:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - shell: pwsh
+        run: ./scripts/ci/Test-RequiresHeader.ps1
+      - shell: pwsh
+        run: ./scripts/ci/Test-Runtimes.ps1
+
+  trailer-guard:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - shell: pwsh
+        run: ./scripts/ci/Test-Trailers.ps1 -Base '${{ github.event.pull_request.base.sha }}'
+
+  branch-flow:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: ./scripts/ci/Test-BranchFlow.ps1 -Head '${{ github.event.pull_request.head.ref }}' -Base '${{ github.event.pull_request.base.ref }}'
+
+  generated-match-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: ./scripts/ci/Test-GeneratedMatchesConfig.ps1
+
+  # Python is set up HERE and only here. The ledger module's compute engine is Python, and
+  # modules/ledger/tests/python.Tests.ps1 runs it for real rather than skipping when no
+  # interpreter is found -- a skip would turn the engine suite green on a runner that cannot
+  # run the engine. The action is pinned to a commit sha, not a tag: a tag is a name its owner
+  # can repoint, and a pinned toolchain that floats is not a pin.
+  #
+  # `pip install -r requirements.txt` is deliberately NOT run. The dry-run path constructs no
+  # client, and snake.py imports anthropic inside the live transport only; python.Tests.ps1
+  # asserts both that the SDK is absent and that the dry-run works anyway.
+  #
+  # This is a STEP, not a seventh job, for the reason recorded in FINDINGS F17: the job keys
+  # here are the required check names, and a new one branch protection has never seen is a
+  # check that can go red while the merge proceeds anyway.
+  pester:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.3.0
+        with:
+          python-version: '3.10'
+      - shell: pwsh
+        run: ./scripts/ci/Invoke-Tests.ps1
+
+  forensic-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: ./scripts/forensic.ps1 -Verify

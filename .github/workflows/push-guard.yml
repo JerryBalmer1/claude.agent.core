@@ -1,0 +1,42 @@
+# The push tripwire.
+#
+# Fires on every push to a long-lived branch and goes RED unless the commit that landed is a
+# merge commit carrying a `who:` trailer - that is, unless it arrived through a pull request.
+#
+# IT CANNOT REFUSE THE PUSH. Branch protection is not available on a private repository on the
+# free tier (three HTTP 403s, recorded in docs/PROTECTION.md), and
+# by the time a `push:` workflow runs the commit is already on the branch. What this produces is
+# a permanent red run attached to the commit that did it, with the reason written out. The
+# failure it exists to catch is an agent pushing straight to main and then reporting that the
+# work went through the flow.
+#
+# THIS IS A SEPARATE WORKFLOW FILE, NOT A JOB IN ci.yml, for two reasons that both matter:
+#
+#   1. scripts/ci/Test-GeneratedMatchesConfig.ps1 asserts that the set of job keys in ci.yml is
+#      exactly config/repo.json -> required_checks. A job here would have to be added to that
+#      list or the build goes red.
+#   2. It must NOT be in required_checks, because it only ever reports on `push` events. The
+#      automerge workflow waits for every name in that list to report success on the pull
+#      request's head commit, and a check that never reports on a pull request would wedge
+#      automerge into waiting forever. A tripwire that can deadlock the flow is worse than none.
+name: push-guard
+
+on:
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  push-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The guard reads the commit's parents, so the graph has to be there. A shallow
+          # checkout reports zero parents for everything and the guard would fail every push,
+          # including the legitimate ones.
+          fetch-depth: 0
+      - shell: pwsh
+        run: ./scripts/ci/Test-PushGuard.ps1 -Sha '${{ github.sha }}'

@@ -1,0 +1,61 @@
+{
+  "schema": "claude.agent.repo/1",
+  "repo": "JerryBalmer1/claude.agent.core",
+  "branches": {
+    "main": "main",
+    "develop": "develop",
+    "feature_prefix": "feature/"
+  },
+  "flow": [
+    [ "feature/*", "develop" ],
+    [ "develop", "main" ]
+  ],
+  "merge": {
+    "strategy": "merge",
+    "delete_branch_on_merge": true
+  },
+  "review": {
+    "mode": "human",
+    "note": "human from birth; core is a clean copy and every commit after the first is a merge, so there is always a human on the other side of the flow"
+  },
+  "required_checks": [
+    "requires-header",
+    "trailer-guard",
+    "branch-flow",
+    "generated-match-config",
+    "pester",
+    "forensic-verify"
+  ],
+  "scripts": {
+    "requires_version": "7.4"
+  },
+  "runtimes": {
+    "powershell": "7.4",
+    "python": {
+      "version": "3.10",
+      "allowed_under": [ "modules/ledger/python/" ]
+    },
+    "rule": [
+      "PowerShell 7.4+ for everything this repo does. No bash, sh, or heredocs.",
+      "Python is permitted in exactly one place, `modules/ledger/python/`, and only because the ledger engine must be a separate process: `LedgerPythonMissing`, `LedgerSnakeFailed`, `LedgerNoResult` and `LedgerResultMismatch` exist because the module holds strings, not objects, and cannot attest to a retry count it never observed.",
+      "An in-process port would delete four pinned error ids and leave the lying-snake fixture nothing to lie to.",
+      "`config/repo.json` -> `runtimes.python.allowed_under` enforces the placement, and `scripts/ci/Test-Runtimes.ps1` is what measures it."
+    ]
+  },
+  "tooling": {
+    "pester": "5.7.1"
+  },
+  "trailer": {
+    "key": "who",
+    "allowed": [ "claude" ]
+  },
+  "pull_request": {
+    "sections": [
+      { "heading": "What", "prompt": "One paragraph. What is different after this merges, and how would someone tell?" },
+      { "heading": "How", "prompt": "The mechanism, not the intent. Which files changed, in what order, and what each one does." },
+      { "heading": "Verify", "prompt": "The exact commands a reader can run and the output they should see. Paste what you measured, not what you expected." },
+      { "heading": "Said vs did", "prompt": "Anything this pull request claims that it did not do, or did differently from the run order it came from. If there is nothing, say so in those words." }
+    ]
+  },
+  "owners": [ "@JerryBalmer1" ]
+}

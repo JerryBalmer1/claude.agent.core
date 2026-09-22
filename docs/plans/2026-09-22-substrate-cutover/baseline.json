@@ -1,0 +1,392 @@
+{
+  "schema": "claude.agent.substrate/baseline/1",
+  "measured_on": "2026-09-21",
+  "host_pwsh": "7.6.6",
+  "docker": "29.5.3",
+  "pins": [
+    {
+      "name": "claude.agent.substrate",
+      "path": "C:\\__Code\\____Claude.Build\\claude.agent.substrate",
+      "present": true,
+      "branch": "feature/cutover-baseline",
+      "head": "7cd58cadaf84e6f2afc38c2505e32a7b53ca806f",
+      "tree": "92a936c87dbcb4520999bdbaf08e8dd3461af8a4",
+      "subject": "Merge pull request #13 from feature/substrate-cutover",
+      "dirty": 14
+    },
+    {
+      "name": "claude.build.ledger",
+      "path": "C:\\__Code\\____Claude.Build\\claude.build.ledger",
+      "present": true,
+      "branch": "feature/grok-confession-record",
+      "head": "d57938d1eed2b5df13435d7820826e50de30483d",
+      "tree": "2ea8efc78ec938f4715150c1976de1ab9fd55151",
+      "subject": "forensic: seq 29-30 - Grok fabricated a ship report, then confessed it in full",
+      "dirty": 0
+    },
+    {
+      "name": "claude.build.policy",
+      "path": "C:\\__Code\\____Claude.Build\\claude.build.policy",
+      "present": true,
+      "branch": "main",
+      "head": "3be10c446b8b4d7c38e392ff4e3657dec8a51e1b",
+      "tree": "aa9fdc4f19eed326ec3a11152eedf47c28a07fcf",
+      "subject": "docs: ledger suite 77/77",
+      "dirty": 0
+    },
+    {
+      "name": "claude.pwsh.image.builder",
+      "path": "C:\\__Code\\____Claude.Build\\claude.pwsh.image.builder",
+      "present": true,
+      "branch": "feature/oneshot-2026-09-21",
+      "head": "e96bba8b1dd17cb7e1fc5439bfbf2fe2c057f68d",
+      "tree": "b6abe2b81b9052880f8440bd01da25c97ff683c1",
+      "subject": "fix: the breadcrumbs sweep was finding itself",
+      "dirty": 0
+    }
+  ],
+  "submodule": {
+    "path": "vendor/claude.build.ledger",
+    "pin": "ed9c9d79856b4590b64eb2f0229dee8775a903d5",
+    "worktree_head": "ed9c9d79856b4590b64eb2f0229dee8775a903d5",
+    "worktree_dirty": 0,
+    "in_sync": true,
+    "tree": "709145a43fbfd1d029e96c60a18d868e3c51c866",
+    "equals_ledger_head": false,
+    "ledger_head": "d57938d1eed2b5df13435d7820826e50de30483d"
+  },
+  "suite_tree": {
+    "source": "C:\\__Code\\____Claude.Build\\claude.build.ledger",
+    "head": "ed9c9d79856b4590b64eb2f0229dee8775a903d5",
+    "tree": "709145a43fbfd1d029e96c60a18d868e3c51c866",
+    "root": "tests/sandbox"
+  },
+  "images": [
+    {
+      "tag": "claude.pwsh.image.leash:run-01",
+      "id": "sha256:1716f8ab42c50b9349eb11c0a703cfdb8cef509c5d0fae1bd1918bbfaeb87cab",
+      "pwsh": "7.6.6",
+      "pester": "6.1.0",
+      "python": "-",
+      "python3": "-"
+    },
+    {
+      "tag": "claude.pwsh.image.developer:run-01",
+      "id": "sha256:6708943e90b067ba9b18e5c985ea337bd5eeed05aec758515756ad36f02be819",
+      "pwsh": "7.6.6",
+      "pester": "6.1.0",
+      "python": "-",
+      "python3": "Python 3.12.3"
+    }
+  ],
+  "suites": [
+    "continuity.ps1",
+    "fail_path.ps1",
+    "forensic_chain.ps1",
+    "fuzzer_import.ps1",
+    "hook_pre_tool.ps1",
+    "ledger_chain.ps1",
+    "no_sabotage.ps1"
+  ],
+  "runs": [
+    {
+      "image": "claude.pwsh.image.leash:run-01",
+      "suite": "continuity.ps1",
+      "exit": 0,
+      "passed": 77,
+      "failed": 0,
+      "total": 77,
+      "count_source": "summary-checks",
+      "seconds": 3.9,
+      "status": "GREEN",
+      "reason": "",
+      "tail": [
+        "PASS  prompts/new-chat.md has no doubled backslashes",
+        "PASS  the surface rule states its law",
+        "PASS  the surface rule covers failures, not just successes",
+        "PASS  the surface rule says a paste block names where it runs and guards the repo",
+        "=== 8  the suite left no trace ===",
+        "PASS  git sees exactly what it saw before the suite ran",
+        "checks run: 77",
+        "ALL CHECKS PASSED"
+      ]
+    },
+    {
+      "image": "claude.pwsh.image.leash:run-01",
+      "suite": "fail_path.ps1",
+      "exit": 1,
+      "passed": 0,
+      "failed": 0,
+      "total": 0,
+      "count_source": "none",
+      "seconds": 1.37,
+      "status": "SKIPPED",
+      "reason": "fail_path.ps1: You cannot call a method on a null-valued expression.",
+      "tail": [
+        "=== TERMINATING ERROR CAUGHT (expected) ===",
+        "FullyQualifiedErrorId : LedgerPythonMissing,Invoke-LedgerForce",
+        "Category              : ObjectNotFound",
+        "TargetObject          : python",
+        "fail_path.ps1: You cannot call a method on a null-valued expression."
+      ]
+    },
+    {
+      "image": "claude.pwsh.image.leash:run-01",
+      "suite": "forensic_chain.ps1",
+      "exit": 0,
+      "passed": 28,
+      "failed": 0,
+      "total": 28,
+      "count_source": "summary-checks",
+      "seconds": 8.05,
+      "status": "GREEN",
+      "reason": "",
+      "tail": [
+        "PASS  .ledger/ledger.jsonl is byte-identical",
+        "PASS  .continuity/forensic.jsonl is byte-identical",
+        "PASS  no executable line of the forensic writer names a path inside .ledger/",
+        "PASS  no executable line of the forensic writer calls ConvertTo-Json or ConvertFrom-Json",
+        "PASS  the writer opens the chain exclusively, one handle",
+        "PASS  the reader parses with System.Text.Json",
+        "checks run: 28",
+        "ALL CHECKS PASSED"
+      ]
+    },
+    {
+      "image": "claude.pwsh.image.leash:run-01",
+      "suite": "fuzzer_import.ps1",
+      "exit": 1,
+      "passed": 0,
+      "failed": 0,
+      "total": 0,
+      "count_source": "none",
+      "seconds": 1.4,
+      "status": "SKIPPED",
+      "reason": "fuzzer_import.ps1: Cannot bind argument to parameter 'Path' because it is an empty string.",
+      "tail": [
+        "fuzzer_import.ps1: Cannot bind argument to parameter 'Path' because it is an empty string."
+      ]
+    },
+    {
+      "image": "claude.pwsh.image.leash:run-01",
+      "suite": "hook_pre_tool.ps1",
+      "exit": 1,
+      "passed": 11,
+      "failed": 0,
+      "total": 11,
+      "count_source": "markers",
+      "seconds": 1.79,
+      "status": "ABORTED",
+      "reason": "New-Fixture: /work/tests/sandbox/hook_pre_tool.ps1:230 -- 230 |  $d2  = New-Fixture 'nonshell'",
+      "tail": [
+        "PASS  hardcodes no absolute workspace path",
+        "PASS  code writes no files at all",
+        "=== CHECK 2  a non-shell tool is allowed and never reaches Inspector ===",
+        "New-Fixture: /work/tests/sandbox/hook_pre_tool.ps1:230",
+        "Line |",
+        "230 |  $d2  = New-Fixture 'nonshell'",
+        "|         ~~~~~~~~~~~~~~~~~~~~~~",
+        "| Cannot bind argument to parameter 'Path' because it is null."
+      ]
+    },
+    {
+      "image": "claude.pwsh.image.leash:run-01",
+      "suite": "ledger_chain.ps1",
+      "exit": 1,
+      "passed": 0,
+      "failed": 0,
+      "total": 0,
+      "count_source": "none",
+      "seconds": 2.35,
+      "status": "SKIPPED",
+      "reason": "Invoke-LedgerForce: /work/examples/force_example.ps1:52 -- 52 |  $result = Invoke-LedgerForce @forward `",
+      "tail": [
+        "52 |  $result = Invoke-LedgerForce @forward `",
+        "|            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+        "| Python not found on PATH as 'python'. The snake starves.",
+        "NativeCommandExitException: /work/tests/sandbox/ledger_chain.ps1:80",
+        "Line |",
+        "80 |          pwsh -NoProfile -File 'examples/force_example.ps1' -Verbose",
+        "|          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+        "| Program \"pwsh\" ended with non-zero exit code: 1 (0x01)."
+      ]
+    },
+    {
+      "image": "claude.pwsh.image.leash:run-01",
+      "suite": "no_sabotage.ps1",
+      "exit": 0,
+      "passed": 22,
+      "failed": 0,
+      "total": 22,
+      "count_source": "summary-covenant",
+      "seconds": 1.32,
+      "status": "GREEN",
+      "reason": "",
+      "tail": [
+        "PASS  grok-judge-table",
+        "PASS  twin-empty-covenant",
+        "PASS  twin-title-only",
+        "PASS  twin-clause-renamed",
+        "PASS  twin-empty-handoff",
+        "PASS  twin-lie-caught",
+        "PASS  twin-imperative-caught",
+        "ALL CHECKS PASSED"
+      ]
+    },
+    {
+      "image": "claude.pwsh.image.developer:run-01",
+      "suite": "continuity.ps1",
+      "exit": 0,
+      "passed": 77,
+      "failed": 0,
+      "total": 77,
+      "count_source": "summary-checks",
+      "seconds": 3.24,
+      "status": "GREEN",
+      "reason": "",
+      "tail": [
+        "PASS  prompts/new-chat.md has no doubled backslashes",
+        "PASS  the surface rule states its law",
+        "PASS  the surface rule covers failures, not just successes",
+        "PASS  the surface rule says a paste block names where it runs and guards the repo",
+        "=== 8  the suite left no trace ===",
+        "PASS  git sees exactly what it saw before the suite ran",
+        "checks run: 77",
+        "ALL CHECKS PASSED"
+      ]
+    },
+    {
+      "image": "claude.pwsh.image.developer:run-01",
+      "suite": "fail_path.ps1",
+      "exit": 1,
+      "passed": 0,
+      "failed": 0,
+      "total": 0,
+      "count_source": "none",
+      "seconds": 2.32,
+      "status": "SKIPPED",
+      "reason": "fail_path.ps1: You cannot call a method on a null-valued expression.",
+      "tail": [
+        "=== TERMINATING ERROR CAUGHT (expected) ===",
+        "FullyQualifiedErrorId : LedgerPythonMissing,Invoke-LedgerForce",
+        "Category              : ObjectNotFound",
+        "TargetObject          : python",
+        "fail_path.ps1: You cannot call a method on a null-valued expression."
+      ]
+    },
+    {
+      "image": "claude.pwsh.image.developer:run-01",
+      "suite": "forensic_chain.ps1",
+      "exit": 0,
+      "passed": 28,
+      "failed": 0,
+      "total": 28,
+      "count_source": "summary-checks",
+      "seconds": 7.96,
+      "status": "GREEN",
+      "reason": "",
+      "tail": [
+        "PASS  .ledger/ledger.jsonl is byte-identical",
+        "PASS  .continuity/forensic.jsonl is byte-identical",
+        "PASS  no executable line of the forensic writer names a path inside .ledger/",
+        "PASS  no executable line of the forensic writer calls ConvertTo-Json or ConvertFrom-Json",
+        "PASS  the writer opens the chain exclusively, one handle",
+        "PASS  the reader parses with System.Text.Json",
+        "checks run: 28",
+        "ALL CHECKS PASSED"
+      ]
+    },
+    {
+      "image": "claude.pwsh.image.developer:run-01",
+      "suite": "fuzzer_import.ps1",
+      "exit": 1,
+      "passed": 0,
+      "failed": 0,
+      "total": 0,
+      "count_source": "none",
+      "seconds": 1.42,
+      "status": "SKIPPED",
+      "reason": "fuzzer_import.ps1: Cannot bind argument to parameter 'Path' because it is an empty string.",
+      "tail": [
+        "fuzzer_import.ps1: Cannot bind argument to parameter 'Path' because it is an empty string."
+      ]
+    },
+    {
+      "image": "claude.pwsh.image.developer:run-01",
+      "suite": "hook_pre_tool.ps1",
+      "exit": 1,
+      "passed": 11,
+      "failed": 0,
+      "total": 11,
+      "count_source": "markers",
+      "seconds": 1.87,
+      "status": "ABORTED",
+      "reason": "New-Fixture: /work/tests/sandbox/hook_pre_tool.ps1:230 -- 230 |  $d2  = New-Fixture 'nonshell'",
+      "tail": [
+        "PASS  hardcodes no absolute workspace path",
+        "PASS  code writes no files at all",
+        "=== CHECK 2  a non-shell tool is allowed and never reaches Inspector ===",
+        "New-Fixture: /work/tests/sandbox/hook_pre_tool.ps1:230",
+        "Line |",
+        "230 |  $d2  = New-Fixture 'nonshell'",
+        "|         ~~~~~~~~~~~~~~~~~~~~~~",
+        "| Cannot bind argument to parameter 'Path' because it is null."
+      ]
+    },
+    {
+      "image": "claude.pwsh.image.developer:run-01",
+      "suite": "ledger_chain.ps1",
+      "exit": 1,
+      "passed": 0,
+      "failed": 0,
+      "total": 0,
+      "count_source": "none",
+      "seconds": 2.21,
+      "status": "SKIPPED",
+      "reason": "Invoke-LedgerForce: /work/examples/force_example.ps1:52 -- 52 |  $result = Invoke-LedgerForce @forward `",
+      "tail": [
+        "52 |  $result = Invoke-LedgerForce @forward `",
+        "|            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+        "| Python not found on PATH as 'python'. The snake starves.",
+        "NativeCommandExitException: /work/tests/sandbox/ledger_chain.ps1:80",
+        "Line |",
+        "80 |          pwsh -NoProfile -File 'examples/force_example.ps1' -Verbose",
+        "|          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+        "| Program \"pwsh\" ended with non-zero exit code: 1 (0x01)."
+      ]
+    },
+    {
+      "image": "claude.pwsh.image.developer:run-01",
+      "suite": "no_sabotage.ps1",
+      "exit": 0,
+      "passed": 22,
+      "failed": 0,
+      "total": 22,
+      "count_source": "summary-covenant",
+      "seconds": 1.34,
+      "status": "GREEN",
+      "reason": "",
+      "tail": [
+        "PASS  grok-judge-table",
+        "PASS  twin-empty-covenant",
+        "PASS  twin-title-only",
+        "PASS  twin-clause-renamed",
+        "PASS  twin-empty-handoff",
+        "PASS  twin-lie-caught",
+        "PASS  twin-imperative-caught",
+        "ALL CHECKS PASSED"
+      ]
+    }
+  ],
+  "substrate_pester": {
+    "measured": true,
+    "ref": "origin/develop",
+    "commit": "7cd58cadaf84e6f2afc38c2505e32a7b53ca806f",
+    "total": 47,
+    "passed": 47,
+    "failed": 0,
+    "skipped": 0,
+    "pester": "5.7.1"
+  },
+  "command": "pwsh -NoProfile -File scripts/Measure-Baseline.ps1 -Json <json> -Markdown <md>"
+}

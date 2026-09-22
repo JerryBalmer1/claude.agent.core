@@ -1,0 +1,20 @@
+output/
+.obsidian/
+
+# Logs are noise, with one exception: a run order's transcript is evidence.
+*.log
+!docs/plans/**/TRANSCRIPT.log
+
+# Python bytecode. New in Phase 4: substrate had no Python entries here because it had no
+# Python. Running modules/ledger/python/cli.py makes CPython write a __pycache__ beside the
+# engine, and modules/ledger/tests/ledger.Tests.ps1 asserts that directory is byte-identical
+# to the copy -- so an untracked .pyc is the difference between a clean tree and a suite that
+# goes red for a reason nobody edited.
+__pycache__/
+*.pyc
+
+# Receipt chains. Resolve-LedgerPath's default is <repo>/.ledger/ledger.jsonl, so any local
+# run of Invoke-LedgerForce without an explicit -LedgerPath writes one here. A receipt chain
+# is evidence about a run on somebody's workstation; it is not a repository artifact, and it
+# must not become one by accident.
+.ledger/

@@ -1,0 +1,7 @@
+{
+  "id": "substrate-phase-3-no-skills",
+  "steps": [
+    { "action": "read the run order" }
+  ],
+  "expected_output": "a plans module with one export"
+}

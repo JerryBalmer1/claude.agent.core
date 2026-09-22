@@ -1,0 +1,55 @@
+# Merges a pull request whose checks are all green, with a MERGE COMMIT, while
+# config/repo.json -> review.mode is "auto".
+#
+# Two triggers, because neither is sufficient alone:
+#   pull_request  - fires when the PR opens, usually before ci has finished; the script then
+#                   exits 0 quietly and waits.
+#   workflow_run  - fires when ci completes. This is the one that actually merges.
+#
+# A workflow_run workflow always runs the copy on the DEFAULT branch, not the PR's copy, so
+# changes to this file only take effect once they are merged into develop.
+#
+# `ready_for_review` is in the types list because of FINDINGS F65, which is a trap this file
+# set and nothing went red over. Invoke-AutoMerge.ps1 stands down on a draft, correctly. But a
+# draft that is opened, CI'd, and only THEN marked ready has no event left that reaches this
+# workflow: `ready_for_review` was not listed, so no pull_request event fires, and no commit
+# was pushed, so ci does not re-run and no workflow_run completes either. The pull request sits
+# open, un-drafted, every check green, and never lands -- while the automerge job in its history
+# shows a tick, because standing down and merging share an exit code. tests/AutoMerge.Tests.ps1
+# asserts this entry is present, by parsing the list rather than grepping the file, so it cannot
+# be satisfied by this comment.
+name: automerge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [develop, main]
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+
+# A `permissions:` block is a whole replacement, not an addition: every scope not listed here
+# becomes `none`. The first version of this file listed only contents and pull-requests, so the
+# token had no `checks` scope at all and `GET /commits/{sha}/check-runs` came back
+# "Resource not accessible by integration (HTTP 403)". Reading the checks is the entire gate,
+# so the scope that lets it read them is not optional.
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+  statuses: read
+  actions: read
+
+jobs:
+  automerge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          ./scripts/Invoke-AutoMerge.ps1
+          -Repo '${{ github.repository }}'
+          -PullRequest '${{ github.event.pull_request.number }}'
+          -HeadBranch '${{ github.event.workflow_run.head_branch }}'

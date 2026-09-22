@@ -1,0 +1,8 @@
+* text=auto eol=lf
+*.ps1 text eol=lf
+*.psm1 text eol=lf
+*.jsonl text eol=lf
+
+# A batch file is read by cmd.exe, which is not promised to tolerate bare LF. The only .cmd
+# here is modules/ledger/tests/fixtures/lying-snake/lie.cmd -- FINDINGS.md F44 TEST 10.
+*.cmd text eol=crlf

@@ -1,0 +1,8 @@
+{
+  "id": "substrate-phase-3-step-without-action",
+  "steps": [
+    { "action": "read the run order" },
+    { "note": "this step has no action, which the schema permits and the validator does not" }
+  ],
+  "expected_output": "a plans module with one export"
+}

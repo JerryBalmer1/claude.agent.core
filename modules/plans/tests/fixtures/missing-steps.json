@@ -1,0 +1,4 @@
+{
+  "id": "substrate-phase-3-missing-steps",
+  "expected_output": "a plans module with one export"
+}

@@ -1,0 +1,192 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/JerryBalmer1/claude.agent.core/schemas/repo.schema.json",
+  "title": "claude.agent.repo/1",
+  "description": "The single source of truth for this repo's branch names, merge strategy, review mode, required checks and script version floor. Everything docs/POLICY.md and the PR template say is rendered from here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "repo",
+    "branches",
+    "flow",
+    "merge",
+    "review",
+    "required_checks",
+    "scripts",
+    "runtimes",
+    "tooling",
+    "trailer",
+    "pull_request",
+    "owners"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "claude.agent.repo/1"
+    },
+    "repo": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$"
+    },
+    "branches": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "main", "develop", "feature_prefix" ],
+      "properties": {
+        "main": { "type": "string", "minLength": 1 },
+        "develop": { "type": "string", "minLength": 1 },
+        "feature_prefix": { "type": "string", "minLength": 1 }
+      }
+    },
+    "flow": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": { "type": "string", "minLength": 1 }
+      }
+    },
+    "merge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "strategy", "delete_branch_on_merge" ],
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": [ "merge" ],
+          "description": "Merge commits only. Squash and rebase are never valid here: hashes are evidence."
+        },
+        "delete_branch_on_merge": { "type": "boolean" }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "mode", "note" ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [ "auto", "human" ],
+          "description": "auto = the automerge workflow merges green PRs. human = automerge stands down."
+        },
+        "note": { "type": "string" }
+      }
+    },
+    "required_checks": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+      }
+    },
+    "scripts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "requires_version" ],
+      "properties": {
+        "requires_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+$"
+        }
+      }
+    },
+    "runtimes": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Which language runtimes this repository is allowed to contain, and where. Substrate vendors the Ledger snake, which is Python, so the permission has to be written down once rather than argued about per file. runtimes.powershell duplicates scripts.requires_version by design of the run order; tests/Runtimes.Tests.ps1 asserts they are equal, because a floor stated twice and checked never is a coincidence.",
+      "required": [ "powershell", "python", "rule" ],
+      "properties": {
+        "powershell": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+$"
+        },
+        "python": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [ "version", "allowed_under" ],
+          "properties": {
+            "version": {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+$",
+              "description": "Minimum interpreter version. A floor, not a pin: the image supplies whatever its base ships and the check asserts it is at least this."
+            },
+            "allowed_under": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "description": "Repo-relative directory prefixes, each ending in a slash. A tracked .py outside every one of these fails the requires-header check.",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*/$"
+              }
+            }
+          }
+        },
+        "rule": {
+          "type": "array",
+          "minItems": 1,
+          "description": "The runtime rule itself, one string per paragraph, rendered verbatim into docs/POLICY.md. The rule is data here rather than prose in a generated file, so the sentence and the check that enforces it cannot drift apart.",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "tooling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "pester" ],
+      "properties": {
+        "pester": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "description": "Exact Pester version CI installs and runs. Pinned, not floating: a test suite whose runner drifts is not a control."
+        }
+      }
+    },
+    "trailer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "key", "allowed" ],
+      "properties": {
+        "key": { "type": "string", "pattern": "^[a-z]+$" },
+        "allowed": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z]+$" }
+        }
+      }
+    },
+    "pull_request": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The body of .github/PULL_REQUEST_TEMPLATE.md that is not derived from the flow, the trailer or the checks. Headings live here so the template is regenerated rather than hand-edited, and so a section nobody wanted cannot be quietly deleted from the generated file.",
+      "required": [ "sections" ],
+      "properties": {
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [ "heading", "prompt" ],
+            "properties": {
+              "heading": { "type": "string", "minLength": 1 },
+              "prompt":  { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "owners": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^@[A-Za-z0-9-]+$" }
+    }
+  }
+}
