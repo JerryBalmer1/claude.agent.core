@@ -630,6 +630,25 @@ Describe 'ledger' -Tag 'ledger' {
                     Should -Be ([System.IO.UnixFileMode]::UserExecute) -Because 'the execute bit is carried in the tree by git update-index --chmod=+x'
             }
         }
+        It 'lie is tracked as 100755, so the execute bit survives a copy that carries only bytes' {
+            # The mode is a property of the TREE, not of the file on disk, and Windows has no
+            # execute bit to observe -- so the platform assertion above goes green on Windows
+            # whatever the index says. This one reads the index, so it is the same assertion on
+            # every runner, which is the whole point of adding it.
+            #
+            # FINDINGS F79: the birth commit copied this file's bytes and not its mode, Windows
+            # could not see the difference, and ubuntu CI reported it as three reds in this
+            # Context that each looked like a different bug.
+            $repoRoot = Split-Path (Split-Path $script:ModuleRoot -Parent) -Parent
+            Push-Location $repoRoot
+            try {
+                $entry = (& git ls-files -s -- 'modules/ledger/tests/fixtures/lying-snake/lie' | Out-String).Trim()
+            }
+            finally { Pop-Location }
+
+            $entry | Should -Not -BeNullOrEmpty -Because 'the stub has to be tracked, not merely present on disk'
+            $entry | Should -Match '^100755 ' -Because 'a stub this module resolves as an Application has to be executable in the tree'
+        }
 
         It 'pwsh -File rejects a path without a .ps1 extension ON WINDOWS ONLY, which is why there are two stubs' {
             # The measurement the first version of this Context got wrong. A shebang hands the

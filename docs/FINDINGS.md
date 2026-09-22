@@ -12,6 +12,12 @@ The working tree was copied; the history was not. The initial commit is the one 
 repository's life that is not a merge, and it is a root commit with no parents. Every commit after
 it arrives through `feature/* -> develop -> main` and is a merge.
 
+`push-guard` is therefore **red on the root commit, by design**. It asserts two parents and a
+`who:` trailer, and a root commit has no parents to assert; the trailer half passes. It is not a
+required check, it goes green from the second commit onward, and the red is left standing rather
+than special-cased — a tripwire with an exception for the one commit nobody could route through
+the flow is a tripwire with an exception.
+
 **Not carried:**
 
 | Path | Why |
@@ -170,3 +176,50 @@ guards run in CI and would still catch it there; nothing here proves they would.
 rebuilds these against repositories the test constructs in `TestDrive`, with a trailerless root, a
 one-parent commit and a two-parent merge built on the spot and no pinned shas, so the suite tests
 the guard instead of testing that a sha still resolves.
+
+## F79 — the copy carried bytes and not modes
+
+`modules/ledger/tests/fixtures/lying-snake/lie` is `100755` in the source repository and landed
+here as `100644`. The copy was written with `[System.IO.File]::WriteAllBytes`, which reproduces
+content exactly and knows nothing about a git file mode. The blob sha is identical in the source,
+in the birth commit and after the repair — `8727348e41a05a22cc1f591a0ba4b9b8c6f73de8` — so nothing
+about the file's content was ever wrong. One bit in the index was.
+
+**Windows cannot observe it.** The assertion that existed,
+*"the stub the module will actually resolve is an Application, and it is the right one for this
+platform"*, reads `[System.IO.File]::GetUnixFileMode` and is inside an `if (-not $IsWindows)`
+branch. On the machine the copy was made on, that branch never ran. The local suite was 161/161
+and the tree was wrong at the same time.
+
+**CI on `ubuntu-latest` caught it**, as three reds that each looked like a different bug:
+
+- `the stub itself writes the payload verbatim on one line and exits 0`
+- `a snake that lies about the run it performed raises LedgerResultMismatch` — raised
+  `LedgerSnakeFailed` instead, because a stub without the execute bit cannot be run at all
+- `the stub the module will actually resolve is an Application…` — *"Expected UserExecute… but got
+  None"*, the only one of the three that named the actual cause
+
+161 total, 158 passed, 3 failed. A green Windows run and a red Linux run on the same commit, and
+the difference was a permission bit that the green runner has no concept of.
+
+**Repaired through the flow, not by amendment.** `git update-index --chmod=+x` on
+`feature/restore-lie-mode`, merged to `develop` and then to `main`. The birth commit still carries
+the wrong mode and is not rewritten. A repository that force-pushes over its first mistake has no
+standing to demand evidence from anything else.
+
+**The missing test now exists.** *"lie is tracked as 100755, so the execute bit survives a copy
+that carries only bytes"* reads `git ls-files -s` and asserts the mode in the **index**, so it is
+the same assertion on every runner instead of one that quietly abstains on Windows. It was run
+against `develop` before the chmod and failed with
+`'100644 8727348e… lie'`, and passes after. A test added without being watched fail is a test
+nobody has evidence about.
+
+**A full mode audit was run**, every tracked path present in both trees compared against the
+source: exactly one difference before the repair and zero after. Both trees hold exactly one
+executable, and it is this file.
+
+**One more thing this commit does not fix.** The birth commit's message carries a
+`Co-Authored-By:` line above its `who: claude` trailer, which the run order's template did not
+have. It is left alone for the same reason the mode is: a pushed commit is not rewritten here.
+`AGENTS.md` → *The trailer rule* now says the only trailer is `who:`, with no footer beneath it,
+so it does not recur.

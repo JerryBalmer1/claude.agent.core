@@ -30,6 +30,12 @@ is the only thing in the object that says an agent did it rather than the human.
 It is **operator-asserted, not a signature** — it is not proof, it is a place to be caught
 lying. CI check `trailer-guard` fails any commit in a PR that lacks it.
 
+**The only trailer is `who:`. No `Co-Authored-By:`, no footer, nothing below it.** The trailer is
+the last line of the message and there is exactly one of them. A second trailer is a second claim
+about who did the work, and this repository makes that claim in one place. FINDINGS F79 records
+the one commit that does not obey this: the birth commit carries a `Co-Authored-By:` line above
+its `who:`. It is not amended — a pushed commit is not rewritten here — and it does not recur.
+
 Conventional subject line. `feat:`, `fix:`, `docs:`, `config:`, `ci:`, `scaffold:`, `forensic:`.
 
 ## The no-bash rule
@@ -56,6 +62,12 @@ When you stop, leave the clone **parked**:
 
 The next agent reads your last block instead of re-deriving the world. A session that ends on a
 detached HEAD, a dirty tree or an unpushed commit has handed the next agent a bug.
+
+**Run the verify chain before pushing, never after.** A red that has already reached the remote is
+a red somebody else can pull. Verifying afterwards measures the same thing and repairs nothing —
+the whole value of the chain is that it runs while the mistake is still local. `push-guard` and
+CI are the second line, not the first, and they cost a public red to tell you what a local run
+would have told you for free.
 
 
 ## Measurement beats expectation
