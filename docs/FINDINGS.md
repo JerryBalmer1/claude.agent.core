@@ -223,3 +223,45 @@ executable, and it is this file.
 have. It is left alone for the same reason the mode is: a pushed commit is not rewritten here.
 `AGENTS.md` → *The trailer rule* now says the only trailer is `who:`, with no footer beneath it,
 so it does not recur.
+
+## F80 — v0.2.0 is cut against a `main` that cannot be protected
+
+`claude.agent.core` is private, the account is on the **free** plan, and branch protection and
+rulesets are paid features for private repositories. Five calls were made against this repository
+on **2026-09-22T23:15:42Z** — `PUT branches/main/protection`, the same for `develop`,
+`POST rulesets`, and read-backs of the first and third — and all five returned **HTTP 403**,
+`"Upgrade to GitHub Pro or make this repository public to enable this feature."` The repository's
+settings were read back afterwards and were unchanged by any of them. `docs/PROTECTION.md` carries
+the transcripts verbatim.
+
+**403 is not 404, and the difference is the finding.** A 404 would mean the feature exists and the
+branch is simply unprotected — something a person can go and fix. A 403 is the tier declining to
+offer the feature at all. There is no setting anybody can toggle here, which is why this is
+recorded as a property of the tag rather than as a task somebody forgot.
+
+Substrate's copy of `PROTECTION.md` carried a caveat at this point: its `develop` did not exist on
+origin when the call was made, so its 403 could in principle have been standing in for a 404. That
+confound does not apply here. `develop` existed on this repository's origin before the call, having
+been pushed at birth and merged into twice since.
+
+**What the pin actually rests on.** Anything that pins `v0.2.0^{commit}` — the images repository as
+a submodule, tools at Phase 0 — is trusting that `main` will not be rewritten underneath it. That
+trust is held up by:
+
+| Control | Strength |
+|---|---|
+| `push-guard` | after the fact. It cannot refuse a push; it makes one loud, dated and public |
+| the flow rules in `AGENTS.md` | convention. Never squash, never rebase, never force-push, never amend anything pushed |
+| the merge-method lock | a real server-side refusal, and the only one here: `mergeCommitAllowed true`, `squashMergeAllowed false`, `rebaseMergeAllowed false`, `deleteBranchOnMerge true`. It reverses with one `gh repo edit` |
+| branch protection | **absent, and not available** |
+
+None of those stops a direct or force push to `main`. A consumer pinning this tag should pin by
+`v0.2.0^{commit}` — a commit sha is the same object whatever a ref later says — and should not read
+the tag as evidence that the branch beneath it is immutable. **Anything pinning this tag inherits
+this.**
+
+This is stated before the tag is cut, not discovered after. A pin whose weakness is documented is
+a different thing from one whose weakness is found later by whoever trusted it.
+
+**Closes** when the account is Pro or the repository is public *and* the three calls in
+`docs/PROTECTION.md` → "What was attempted" succeed, re-run unchanged. BACKLOG **B12**.
