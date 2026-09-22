@@ -14,11 +14,13 @@ code needs a run order that says so. Nothing here reaches the network except CI 
 none of the history: the initial commit is the one commit in this repository's life that is not a
 merge, and `docs/FINDINGS.md` F74 names every path that was not carried and why.
 
-The suite is **161 tests, 0 failed**. That is 27 fewer than the source measured, and the 27 are
-not a regression: every one of them asserted a fact about the source repository's own git history
-— pinned commit shas as fixtures, a trailerless root commit, a grandfather exemption file — none
-of which a clean copy has. F78 names all 27 and BACKLOG B11 rebuilds the ones worth rebuilding
-against synthetic repositories the test itself constructs.
+The suite is **162 tests, 0 failed**. The source measured 188: 27 were removed and 1 was added.
+The 27 are not a regression — every one of them asserted a fact about the source repository's own
+git history, pinned commit shas as fixtures, a trailerless root commit, a grandfather exemption
+file, none of which a clean copy has. F78 names all 27, and BACKLOG B11 rebuilds the ones worth
+rebuilding against synthetic repositories the test itself constructs. The 1 that was added pins a
+file mode in the index, because the copy carried bytes and not modes and only Linux CI could see
+it (F79).
 
 `docs/plans/2026-09-22-substrate-cutover/verify.ps1` re-derives this release's claims and reports
 **17 of 19**. The two reds are F70 and are by design: `modules/plans/plans.psd1` and
@@ -28,11 +30,11 @@ Run it from `develop`; run from `main` it reports 16 because `main -> develop` m
 
 | Module | Import path | Suite | Tests |
 |---|---|---|---|
-| `ledger` | `modules/ledger/ledger.psd1` | `modules/ledger/tests/` | **90** |
+| `ledger` | `modules/ledger/ledger.psd1` | `modules/ledger/tests/` | **91** |
 | `policy` | `modules/policy/policy.psd1` | `modules/policy/tests/` | **10** |
 | `plans` | `modules/plans/plans.psd1` | `modules/plans/tests/` | **12** |
 | — | the repository's own suite | `tests/` | **49** |
-| | | **total** | **161** |
+| | | **total** | **162** |
 
 Every figure in that table is measured, not counted by hand. It comes out of
 [`scripts/Measure-Modules.ps1`](scripts/Measure-Modules.ps1), and
