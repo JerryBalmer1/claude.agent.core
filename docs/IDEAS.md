@@ -172,6 +172,46 @@ do not overclaim.
 - Whether refusal receipts leak information an attacker could use to map the allow list.
 - Which reachable surfaces are wrapped, which are accepted risks, and who decides.
 
+## 2026-09-23 — Ontology derived from who will act on it
+
+The conventional order is to model the domain first and hope for adoption afterwards. The
+inversion is to derive the model from the people who will use it: a node earns its place
+because a named role would act on it, and a node no role acts on does not get one.
+
+The roles are examples rather than a closed list, and the list is expected to grow as
+somebody finds a view nobody had written down. A developer at first clone — *I have
+downloaded this, now what* — wants the shortest path from a cold repository to a working
+command. A business analyst wants what the thing is for and what it refuses to do. An
+operator wants what runs, when, and what it does when it fails. An auditor wants what is
+recorded, by whom, and what would prove it wrong. A partner or client evaluating the work
+wants the boundary of the claim before the detail of the implementation.
+
+The consequence is testable, which is the reason for writing it down rather than admiring
+it. **A node that no view ever projects is dead weight.** Unused-node count is then a
+measurable signal of the same kind as refusal rate — see *"Metrics, and the ones that lie"*
+in [`docs/analysis/refusal.md`](analysis/refusal.md), which sets out why a count of things
+that did not happen reads differently from a count of things that did. The argument is not
+repeated here.
+
+Two risks, and neither is hypothetical.
+
+**Role-scoped vocabulary without a resolution layer produces synonyms, not an ontology.**
+The analyst's term and the developer's term for one concept have to resolve to one node, or
+the result is several vocabularies in a shared file, which is worse than one vocabulary
+nobody likes. That mapping is the hard part. Harvesting terminology per role is the easy
+part, and it is the part that looks like progress while the hard part is untouched.
+
+**A skill that generates per-role terminology produces model output, and model output is
+unverified by everything else in this repository.** Such output lands as *proposals a human
+accepts*, never as nodes written directly into the vocabulary. This is the same boundary the
+layer taxonomy already draws between a receipt and a judgment: a record of what was produced
+is not a decision that it was right, and the party that produces the record is not the party
+that accepts it.
+
+Distribution is parked. Whether any of this eventually ships as a plugin, a provider package
+or nothing at all is a later concern, and it is recorded here only so that leaving it alone
+is a decision rather than a drift.
+
 ## 2026-09-23 — Receipt on bind
 
 A PowerShell attribute, [Receipted()], that writes a receipt at parameter-binding time
