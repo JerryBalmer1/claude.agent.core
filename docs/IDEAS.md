@@ -10,14 +10,10 @@ Two rules:
   Nothing is closed here, because nothing is tracked here.
 
 One entry per idea, dated, newest first, under a heading of the form
-`## YYYY-MM-DD 
-—
- <short title>`, with a few sentences of prose beneath it. No
+`## YYYY-MM-DD — <short title>`, with a few sentences of prose beneath it. No
 checkboxes, no status column, no priority field. This is a notebook, not a tracker.
 
-## 2026-09-22 
-—
- A chaos and injection harness for the sentinel
+## 2026-09-22 — A chaos and injection harness for the sentinel
 
 A deliberate injection-point harness for testing the sentinel end to end. A process parks
 on a timeout, polls a drop location, executes whatever payload lands there, and records a
@@ -36,10 +32,6 @@ Three constraints, all of them the point rather than caveats:
   chain verify afterwards. A gate that denies correctly but lies in the ledger is worse than
   one that fails openly.
 
-Context for why it came up: PowerShell has ordinary injection surfaces 
-—
- profile scripts,
-`PSModulePath` shadowing, inherited environment, runspaces 
-—
- so whether a deny is real or
+Context for why it came up: PowerShell has ordinary injection surfaces — profile scripts,
+`PSModulePath` shadowing, inherited environment, runspaces — so whether a deny is real or
 merely claimed is worth measuring rather than assuming.
