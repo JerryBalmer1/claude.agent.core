@@ -483,7 +483,7 @@ function New-PullRequestTemplate {
     & $add ''
     & $add '- [ ] No module code outside the modules a run order named'
     & $add '- [ ] No sibling repository was touched'
-    & $add '- [ ] No container surface was added - substrate is never a container'
+    & $add '- [ ] No container surface was added - core is never a container'
     $pyPrefixCount = @($Config.runtimes.python.allowed_under).Count
     $pyPhrase = if ($pyPrefixCount -eq 1) { 'the one prefix' } else { "one of the $pyPrefixCount prefixes" }
     & $add ('- [ ] No Python outside {0} the runtime rule permits' -f $pyPhrase)
