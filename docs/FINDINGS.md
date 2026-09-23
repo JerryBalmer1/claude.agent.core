@@ -440,3 +440,134 @@ later tree (F74, `AGENTS.md:95-99`). With the README corrected it reports `19 ch
 4 failed`, the same four by-design reds it has always reported, and the defect goes back to being
 unreachable. `docs/PRE-PUBLIC.md` records that a live equivalent of this script, if one is wanted,
 is a new script rather than an edit to this one.
+
+## F86 — the drift register measured one axis, and a one-axis measurement reads like a whole file
+
+Measured 2026-09-23 while correcting `modules/ledger/README.md` at `71463a0`.
+`docs/PRE-PUBLIC.md` -> *"Documentation that has drifted"* named that file at `:10-17` and called
+it stale on one axis, the export list. Correcting it turned up **two more false claims in the same
+file**, both on a different axis and neither on the checklist. Line numbers are as the file stood
+before `71463a0`:
+
+| Claim | The measurement that refutes it |
+|---|---|
+| `:5` — *"`ledger.psm1` is byte-identical to the source"* | `git hash-object -- modules/ledger/ledger.psm1` returns `ba9c8efa8db2e33ee9c319b1cd72f9dd7a22e32e`; the source blob is `37d63403e7f0e21c5a8aa34ac6f80bbacb792d5a`. `33e81e9` changed the `Export-ModuleMember` line and nothing else |
+| `:6` — *"`tests/ledger.Tests.ps1` recomputes its git blob sha from the bytes on disk on every run"* | There is no `ledger.psm1` row in `modules/ledger/tests/fixtures/copied-blobs.psd1`. It was retired at `d182cbe`, forensic seq 4, and **D002** records that absence as the enforcement |
+| `:72-73` — *"a test proves that by reversing the change and watching the source blob sha come back"* | F76 deleted that assertion. The fixture says so about itself at `copied-blobs.psd1:15-19`: `ManifestSourceSha` is *"a record of what was measured, not an input to a live check"* |
+
+**Two of the three claim a live check that does not exist**, which is worse than claiming nothing,
+because a reader who is told a check recomputes the hash stops looking for one.
+
+**The shape.** `:10-17` in the register is a citation, not a scope, and nothing beside it said
+which axes had not been measured — so a line that measured one sentence read like a measurement of
+the file. Same family as F84 and F85: the incomplete answer and the complete one are the same
+shape on the page. What would have caught it is asking *"what else does this file claim?"* once per
+file rather than once per finding.
+
+## F87 — `pr-body-links` has rejected its own author's draft on four pull requests, and the fourth was the body that records the first three
+
+Measured 2026-09-23. `scripts/ci/Test-PrBodyLinks.ps1` has refused a pull request body written by
+the agent that wrote the check, on **PR #13**, **PR #16**, **PR #20** — and then on the draft body
+of the pull request that carries this row. One would be a typo. Four is the check earning its
+place.
+
+What eventually landed is clean. Run against the three stored bodies at develop `fbb3272`:
+
+| PR | Result |
+|---|---|
+| #13 — *docs: template Wall and Said vs did* | `PASS -- 6 path token(s) checked, every one a sha-pinned permalink` |
+| #16 — *fix: banner URL a private repo will actually serve* | `PASS -- 7 path token(s) checked` |
+| #20 — *docs: decisions register, vocabulary, pre-public checklist* | `PASS -- 15 path token(s) checked` |
+
+Every rejection therefore happened **before** the body was opened, which is the check working as
+designed and also why none of it is reproducible from the tree: a draft that got fixed leaves no
+artifact. The three numbers are the evidence that survives, and they are recorded here rather than
+left as three separate anecdotes that each looked like a slip.
+
+**The three were not the same mistake.** #20's was the sharpest: two of the paths its body needed
+to name, `tests/Repo.Tests.ps1` and `config/contracts.json`, **do not exist** — they are two of the
+seed items `docs/PRE-PUBLIC.md` records as not found — so no permalink can be built for either, and
+the only legal home for a path that cannot be pinned is a fenced block. A check that forces a
+non-existent path into a fence is drawing the right line: an unpinnable citation is not a citation.
+
+**The fourth, recorded because it happened while this row was being written.** The draft body of
+the pull request that introduces F86, F87 and F88 was rejected **twice**.
+
+```text
+round 1   FAIL -- 5 violation(s) in 30 path token(s)     all five the same token: AGENTS.md
+round 2   FAIL -- 1 violation(s) in 29 path token(s)     the same token, once more
+round 3   PASS
+```
+
+Round 1's five were one token in five sentences — written as prose, including inside a heading
+quoting a commit subject, where the path is a word in the sentence being quoted. Round 2's one was
+**that same token inside the sentence describing round 1**. Writing about the violation reproduced
+it. Moving the literal into a fenced block is what finally passed, fences being the one exemption.
+
+**The count here is pull requests, not rounds**, and it is four: #13, #16, #20, and the one this
+row rides in. Rounds are not worth counting, because the number moves while the body is being
+written and a row that chases it is stale on arrival. The mechanism is the finding.
+
+And the mechanism is not ignorance of the rule. A path reads as prose to the author and as a
+citation to the check, and the author cannot see the difference **in their own sentence** — least
+of all in a sentence whose subject is the check. Four for four is the argument for keeping it.
+
+**A second defect, found while measuring the above.** The script's own worked example at
+`scripts/ci/Test-PrBodyLinks.ps1:61` is wrong:
+
+```powershell
+$env:PR_BODY = (gh pr view 12 --json body --jq .body); pwsh -NoProfile -File scripts/ci/Test-PrBodyLinks.ps1
+```
+
+PowerShell captures a multi-line body as a **string array**, and assigning an array to an
+environment variable joins it with spaces. The whole body collapses to one line: every path token
+is then reported at `line 1`, and fenced blocks stop being fences because there are no line breaks
+left to close them. Measured on PR #20's body — that form reported
+`FAIL -- 6 violation(s) in 21 path token(s)`, including the two non-existent paths that the body
+had correctly fenced, while joining the same array with newlines first reported `PASS`.
+
+A false FAIL is the safe direction, and the example is still wrong. CI is unaffected:
+`.github/workflows/ci.yml:59` passes the body through a GitHub expression into the environment and
+never through a PowerShell pipeline. This is F83's shape again — two invocations that look
+identical, one of which quietly changes the input.
+
+## F88 — correcting one pinned doc is a three-file move, and the third file is the one nobody lists
+
+Measured 2026-09-23 on `feature/docs-cleanup`. `modules/ledger/docs/commands.md` is stale on the
+export axis (`docs/PRE-PUBLIC.md`) and is a pinned blob at
+`modules/ledger/tests/fixtures/copied-blobs.psd1:37`. **D002** says how a pinned file gets
+corrected: retire the row, do not re-pin. Doing exactly that, and nothing else, goes red.
+
+Removing the `docs/commands.md` row alone, with `commands.md` itself untouched:
+
+```text
+[-] no copied file carries a CR byte, so the shas above are not an accident of checkout
+    Expected 10, because the table must not be empty, but got 9.
+    at @($script:CopiedBlobs).Count | Should -Be 10 -Because 'the table must not be empty',
+    modules/ledger/tests/ledger.Tests.ps1:348
+pester: total=205 passed=204 failed=1 skipped=0
+```
+
+The suite drops `206` to `205` because the `-ForEach` row for that blob disappears, and one
+further test fails because `modules/ledger/tests/ledger.Tests.ps1:348` hard-codes the row count.
+The move is **three** files: the doc, the pin, and the count.
+
+`d182cbe` already did this shape once — retiring the `ledger.psm1` row landed with edits to
+`ledger.Tests.ps1` in the same commit — but neither **D002** nor **B10** says the count is part of
+it. B10 prices the `tenacity` retirement as *"both edits or neither"* when it is three edits or
+none.
+
+**Left undone rather than half done.** The run order for this branch permitted docs and fixtures
+only, so the third file was out of reach. Landing two thirds of the move would have pushed a red
+suite to a branch somebody else can pull, which `AGENTS.md:66-70` is about. `commands.md` and its
+pin are untouched: the fixture was restored after the measurement and hashes to
+`29573a466cdef606b5129057e7ac53dae89e59a3`, the same blob it has at `fbb3272`. BACKLOG **B16**
+holds all three edits together.
+
+**The moral is about the count, not the doc.** A hard-coded row count sitting next to a
+data-driven table is a second place the table's length is written down, and it is the place
+nobody thinks of as part of the table. The suite makes exactly this argument about itself at
+`modules/ledger/tests/ledger.Tests.ps1:33-35` — the table is a data file *"loaded in both Pester
+phases from one place"*, because *"a second copy of eleven hashes pasted into BeforeAll is a
+second place to forget"* — and then writes the table's **length** down a second time at `:348`.
+The hashes were centralised; the count was not.
