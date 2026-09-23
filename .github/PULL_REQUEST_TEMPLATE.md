@@ -6,19 +6,25 @@
 
 ## What
 
-<!-- One paragraph. What is different after this merges, and how would someone tell? -->
+<!-- What is true after this merges, in prose. Not a list of what you did -- what is different, and how would someone tell? -->
 
-## How
+<details open>
+<summary><strong>How</strong></summary>
 
-<!-- The mechanism, not the intent. Which files changed, in what order, and what each one does. -->
+<!-- One block per commit, and repeat this block per commit: the sha first, then every file touched as a sha-pinned permalink, then what changed and why. The pr-body-links check rejects a bare path, a URL on a branch name instead of a 40-hex sha, and a line suffix that does not match the #L fragment. -->
 
-## Verify
+</details>
 
-<!-- The exact commands a reader can run and the output they should see. Paste what you measured, not what you expected. -->
+## Why
 
-## Said vs did
+<!-- The control this serves, or the constraint it removes. Short. -->
 
-<!-- Anything this pull request claims that it did not do, or did differently from the run order it came from. If there is nothing, say so in those words. -->
+<details>
+<summary><strong>Verify</strong></summary>
+
+<!-- The check table, pester counts, and the forensic tip. Paste what you measured, not what you expected. -->
+
+</details>
 
 ## Base branch
 

@@ -51,10 +51,10 @@
   },
   "pull_request": {
     "sections": [
-      { "heading": "What", "prompt": "One paragraph. What is different after this merges, and how would someone tell?" },
-      { "heading": "How", "prompt": "The mechanism, not the intent. Which files changed, in what order, and what each one does." },
-      { "heading": "Verify", "prompt": "The exact commands a reader can run and the output they should see. Paste what you measured, not what you expected." },
-      { "heading": "Said vs did", "prompt": "Anything this pull request claims that it did not do, or did differently from the run order it came from. If there is nothing, say so in those words." }
+      { "heading": "What", "prompt": "What is true after this merges, in prose. Not a list of what you did -- what is different, and how would someone tell?" },
+      { "heading": "How", "collapsible": true, "open": true, "prompt": "One block per commit, and repeat this block per commit: the sha first, then every file touched as a sha-pinned permalink, then what changed and why. The pr-body-links check rejects a bare path, a URL on a branch name instead of a 40-hex sha, and a line suffix that does not match the #L fragment." },
+      { "heading": "Why", "prompt": "The control this serves, or the constraint it removes. Short." },
+      { "heading": "Verify", "collapsible": true, "prompt": "The check table, pester counts, and the forensic tip. Paste what you measured, not what you expected." }
     ]
   },
   "owners": [ "@JerryBalmer1" ]
