@@ -464,12 +464,12 @@ the file. Same family as F84 and F85: the incomplete answer and the complete one
 shape on the page. What would have caught it is asking *"what else does this file claim?"* once per
 file rather than once per finding.
 
-## F87 — `pr-body-links` has rejected its own author's draft on four pull requests, and the fourth was the body that records the first three
+## F87 — `pr-body-links` has rejected its own author's draft on five pull requests, and the fourth was the body that records the first three
 
 Measured 2026-09-23. `scripts/ci/Test-PrBodyLinks.ps1` has refused a pull request body written by
 the agent that wrote the check, on **PR #13**, **PR #16**, **PR #20** — and then on the draft body
-of the pull request that carries this row. One would be a typo. Four is the check earning its
-place.
+of the pull request that carries this row, **PR #21**. One would be a typo. Four is the check
+earning its place. **PR #23** made it five, and the amendment at the end of this row records it.
 
 What eventually landed is clean. Run against the three stored bodies at develop `fbb3272`:
 
@@ -504,9 +504,9 @@ quoting a commit subject, where the path is a word in the sentence being quoted.
 **that same token inside the sentence describing round 1**. Writing about the violation reproduced
 it. Moving the literal into a fenced block is what finally passed, fences being the one exemption.
 
-**The count here is pull requests, not rounds**, and it is four: #13, #16, #20, and the one this
-row rides in. Rounds are not worth counting, because the number moves while the body is being
-written and a row that chases it is stale on arrival. The mechanism is the finding.
+**The count here is pull requests, not rounds**, and it is five: #13, #16, #20, #21 — the one this
+row rode in — and #23. Rounds are not worth counting, because the number moves while the body is
+being written and a row that chases it is stale on arrival. The mechanism is the finding.
 
 And the mechanism is not ignorance of the rule. A path reads as prose to the author and as a
 citation to the check, and the author cannot see the difference **in their own sentence** — least
@@ -530,6 +530,18 @@ A false FAIL is the safe direction, and the example is still wrong. CI is unaffe
 `.github/workflows/ci.yml:59` passes the body through a GitHub expression into the environment and
 never through a PowerShell pipeline. This is F83's shape again — two invocations that look
 identical, one of which quietly changes the input.
+
+**Amended 2026-09-23: #23 makes it five.** The list above now reads #13, #16, #20, #21, #23, and
+the counting rule is unchanged — pull requests, not rounds.
+
+**What is and is not evidence for the fifth.** The rejection itself is reported, not reproducible:
+it happened to a draft, and this row already states why that leaves no artifact. `gh pr checks 23`
+shows `trailer-guard` green, which is the job `pr-body-links` runs inside
+(`.github/workflows/ci.yml:57-60`), so CI carries no trace of it either. #23 is therefore recorded
+on exactly the footing #13, #16 and #20 are recorded on, and no better. What *is* measurable is
+the body that landed: run against #23's stored body at develop `14d5709`, the check reports
+`PASS -- 21 path token(s) checked, every one a sha-pinned permalink`. **F89** records that run,
+because the same body run through the script's own worked example fails 18 times.
 
 ## F88 — correcting one pinned doc is a three-file move, and the third file is the one nobody lists
 
@@ -571,3 +583,151 @@ nobody thinks of as part of the table. The suite makes exactly this argument abo
 phases from one place"*, because *"a second copy of eleven hashes pasted into BeforeAll is a
 second place to forget"* — and then writes the table's **length** down a second time at `:348`.
 The hashes were centralised; the count was not.
+
+## F89 — the worked example in `pr-body-links` destroys the line numbers it reports, and the token arithmetic says exactly what it costs
+
+Measured 2026-09-23 on `feature/docs-remainder`, against PR #23's stored body at develop
+`14d5709`. F87's closing section already records this defect, measured on PR #20's body. This row
+is the reproduction on a second body, and it adds the two things that measurement did not have:
+the reported line numbers, and an arithmetic identity that makes the corruption self-evident.
+
+The form documented at `scripts/ci/Test-PrBodyLinks.ps1:61` assigns the result of
+`gh pr view --json body --jq .body` straight to an environment variable. That result is a
+`System.Object[]` — one element per line — and assigning an array to an environment variable joins
+it with **spaces**. Both forms, run against #23:
+
+```text
+$env:PR_BODY = (gh pr view 23 --json body --jq .body)
+    16840 bytes, 0 newlines
+    FAIL -- 18 violation(s) in 39 path token(s)      every violation reported at "line 1"
+    exit 1
+
+$env:PR_BODY = ((gh pr view 23 --json body --jq .body) -join "`n")
+    16840 bytes, 186 newlines
+    PASS -- 21 path token(s) checked, every one a sha-pinned permalink
+    exit 0
+```
+
+**The byte count is identical in both**, because a space and a newline are one byte each. Nothing
+about the value's length says it has been corrupted, which is how the form survives in a worked
+example: inspected casually, the variable looks right.
+
+**The arithmetic is the finding.** `39 - 21 = 18`, and 18 is the violation count. Every path token
+the collapsed form sees over and above the correct form is a token that was inside a fenced block,
+and every one of them is reported as a violation — because a fence needs a line break to close it
+and there are none left. The fence exemption does not degrade gracefully; it disappears, and the
+paths it was protecting are exactly the set that fails.
+
+**Every violation is reported at `line 1`.** That is the second cost and the more expensive one in
+practice: the report names 18 paths and gives one line number for all of them, so the output cannot
+be used to locate anything. A check whose entire product is a list of locations reports a single
+location.
+
+**It fails pass-to-fail, which is the safe direction.** A body that would pass is reported failing.
+Nothing red is concealed and nothing wrong is merged; the whole cost is the author's time, spent
+hunting 18 violations that do not exist. **CI is unaffected** — `.github/workflows/ci.yml:57-60`
+passes the body as an environment variable from a GitHub expression and never through a PowerShell
+pipeline.
+
+**The script is not edited.** This row records the defect. F87 recorded it once already without it
+being acted on, and a second row that also declines to act is at least explicit about why: the
+fix is a change to a `.ps1`, and this branch is docs-only.
+
+## F90 — the first refusal recorded in this tree, in the five fields the analysis says a refusal record needs
+
+`docs/analysis/refusal.md` -> *"What a refusal record has to hold"* argues that a refusal is a
+record with five fields rather than an event with a timestamp, and that almost nothing in the field
+is built to hold one. This repository had already produced a refusal and never written it down in
+that shape. This row is that record.
+
+| Field | Value |
+|---|---|
+| **who refused** | the agent, working PR #21 |
+| **what was asked** | edit `AGENTS.md:108` so that `git grep -n substrate -- AGENTS.md` returns nothing |
+| **which rule bound** | a live citation is not edited to satisfy a grep |
+| **that rule's version at that moment** | `AGENTS.md` at blob `f8161098111b58aaeda6c27c4d6d3f25ea16d417` — the blob at merge `f81edce`, and still the blob at `14d5709` |
+| **what happened next** | accepted; the postcondition was withdrawn. Rephrase count **0** |
+
+**The ask.** `AGENTS.md:3` had opened *"Law for any agent working in `claude.agent.substrate`"* —
+the governing file of this repository naming a different repository in its first sentence.
+Correcting it took `git grep -n substrate -- AGENTS.md` from `2` to `1`. The residual match was
+`AGENTS.md:108`, and the postcondition as stated was that the grep return nothing. Satisfying it
+meant editing a sentence that cites `docs/plans/2026-09-22-substrate-cutover/RUN-ORDER.md`, a
+directory that exists on disk. The string is a path, the path is live, and the only way to clear
+the grep was to break a working citation.
+
+**What the refusal produced.** It is legible in the tree at `docs/PRE-PUBLIC.md:119-121`, which
+records the outcome rather than the argument: *"the remaining match is `AGENTS.md:108`, which cites
+`docs/plans/2026-09-22-substrate-cutover/RUN-ORDER.md` — a directory that exists, so the string is
+a live path and not a naming defect."* The same pull request then added `AGENTS.md:117` to the
+unresolved bullet at `docs/PRE-PUBLIC.md:130-136` — a match the case-sensitive grep never saw — so
+the ask was answered more completely than it was posed, and in the opposite direction from the one
+it asked for.
+
+**The aftermath field is the one everyone skips, and this one reads well.** Accepted, with the
+postcondition withdrawn rather than routed around. Rephrase count **0**: the ask was not
+reformulated and tried again, which `docs/analysis/refusal.md` -> *"The rephrase count is the
+signal"* names as the single integer separating a wall from a turnstile. A boundary crossed on the
+ninth ask and a boundary never re-approached are different boundaries, and this is the second.
+
+**Two limits on this record, stated rather than left to be noticed.** *Who refused* is the agent,
+and `docs/analysis/refusal.md` is explicit that a refusal the agent reports about itself is
+self-report and the thing not to trust — there was no enforcement point, nothing mechanical
+refused anything, and what happened is that an instruction was declined and the reason written
+down. And the rule that bound was not written in this form before it was applied: the nearest
+existing law is `AGENTS.md:95-99` with F74, which freezes `docs/plans/**` against being rewritten
+to match this repository's naming, on the grounds that *"a rewritten measurement is a falsified
+one"*. That is the same principle applied to a different object — the archive itself rather than a
+live citation of it — so this row states the rule for the first time rather than citing one that
+was already law.
+
+## F91 — the first cost-of-proof datum: at chain length 14, verification costs less than the interpreter that hosts it
+
+`docs/IDEAS.md` -> *"Cost of proof"* states that nobody publishes what a gate costs per call, and
+that no measurement exists here either. One now does. Measured 2026-09-23 on
+`feature/docs-remainder`, against the chain at **14 records**, tip `aec76a514d3f`.
+
+**Wall clock, `scripts/forensic.ps1 -Verify`.** Local runs are on the workstation, Windows,
+PowerShell 7.4+; CI is `ubuntu-latest`, from PR #23's `forensic-verify` job.
+
+```text
+local, in-process               271.3  85.3  71.3  66.7  80.7 ms   median 80.7 ms
+local, pwsh -NoProfile -File    992.6  890.0  913.6 ms             median 913.6 ms
+CI, the -Verify step alone      2 s                                +/- 1 s, timestamp granularity
+CI, the whole forensic-verify job   7 s
+```
+
+**The first number in each local series is the cold one** — 271.3 ms against a 66.7 ms floor — and
+it is kept rather than discarded, because a CI runner pays the cold cost on every run and never
+the warm one.
+
+**At this length, verification is process startup and not chain work.** The distance between
+80.7 ms in-process and 913.6 ms through `pwsh -NoProfile -File` is roughly 830 ms of interpreter
+start that has nothing to do with the chain. The CI step pays that start as well, plus a checkout,
+and lands at 2 s inside a 7 s job. Whatever shape chain verification has, at 14 records it is not
+yet the thing being measured.
+
+**Bytes.**
+
+```text
+the seq 14 record            618 bytes, 619 with its LF
+.continuity/forensic.jsonl   14274 bytes over 14 records
+mean                         1019.6 bytes per record
+```
+
+The seq 14 record sits well under the mean, and the reason is that `evidence` is free text: its
+length is the whole of the variance. A per-call receipt cost quoted as one number would be quoting
+the length of whatever sentence the writer happened to choose.
+
+**Pester, for scale.** Same workstation, same commit: `206 passed / 0 failed / 0 skipped`, Pester's
+own duration `43.21 s`, wall clock `44.8 s`; the CI `pester` job on #23 is `1m7s`. Verification is
+between two and three orders of magnitude cheaper than the suite running beside it in the same
+workflow. That comparison is the only thing this datum says about whether the cost is tolerable,
+and it says it at one chain length.
+
+**One point at one chain length is not a curve.** Nothing here shows how verification scales,
+because a single measurement cannot — constant, linear and quadratic all pass through one point.
+What this row supports is narrow: *at 14 records, on this hardware, verification costs less than
+the interpreter that hosts it.* Every question worth asking about cost of proof is about the
+slope, and the slope is unmeasured. BACKLOG **B17** is the harness that would turn this point into
+a curve.

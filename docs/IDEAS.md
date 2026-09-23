@@ -172,6 +172,61 @@ do not overclaim.
 - Whether refusal receipts leak information an attacker could use to map the allow list.
 - Which reachable surfaces are wrapped, which are accepted risks, and who decides.
 
+## 2026-09-23 — Prose and enforcement, diffed
+
+The ontology work below makes a claim that can be lost, and there is exactly one way to lose it:
+run the same task twice — once under prose FLOW, once under an enforced function — and diff the
+outcomes. The bottom band of [`docs/analysis/gaps.md`](analysis/gaps.md), *"Bottom — the
+weight-bearing claim"*, already states that comparison as the unoccupied position. What is written
+here is the measurement protocol that would have to exist before anybody could run it.
+
+**Pass/fail is too coarse to be the output.** Both arms will mostly pass, and a comparison that
+reports two passes has measured nothing. What separates them is the shape of the run: refusal
+rate, handoff frequency, steps taken to reach the same end state, and the shape of the retries —
+whether successive attempts narrow or merely repeat, which
+[`docs/analysis/failure-envelope.md`](analysis/failure-envelope.md) argues costs nothing extra to
+compute once the attempts are attached to the record.
+
+Two problems come with the protocol. Neither is solved here, and both are worth stating before
+anybody starts rather than discovering halfway through.
+
+**There may be no ungated path left to diff against.** Once the wrapper is the only callable
+surface an agent has, the prose arm is not executable at all, and a harness cannot measure an arm
+it cannot run. The protocol therefore needs a deliberate bypass mode — and a bypass mode is a
+gate, so it has to be gated and receipted itself, or the measuring apparatus becomes the hole in
+the thing it is measuring.
+
+**The comparison may not isolate what it claims to isolate.** A rule-enforcing system set against
+an agent that is never interrupted moves two variables at once, and the difference gets attributed
+to what the rule says rather than to the fact that it interrupts (arXiv 2609.26048, FIRE). The
+answer is that both arms interrupt at the same decision point and only the expression differs,
+which is easy to write down and is the part of the design most likely to be quietly dropped the
+moment the ungated arm turns out to be expensive to build.
+
+## 2026-09-23 — The distance test
+
+Hand the agent its context at level N, then at N-1, then at N-2 — each one a step further from the
+specifics — and find the level at which it stops producing the right thing. The level where it
+breaks is the measurement: everything above it was carried by structure, everything below it
+needed the detail.
+
+**The test is only valid if the nesting is uniform at every level.** Where one branch of the tree
+is three deep and another is five, a break at N-2 is a break in the shallower branch, and the
+result reports inconsistency in the material rather than distance between levels. That is a
+precondition and not a caveat — a ladder with uneven rungs measures the rungs.
+
+**The output is a per-domain map, not a score.** A single number averaged across domains hides the
+only thing worth knowing, which is where the abstraction holds and where it does not. The map is
+directly actionable in a way a score is not: it says which domains are worth writing detail for
+and which are carried by shape alone, which makes it a budget decision about documentation rather
+than a research result.
+
+This is the **ablation ladder** under its other name. The bottom band of
+[`docs/analysis/gaps.md`](analysis/gaps.md), *"Bottom — the weight-bearing claim"*, states it as
+the protocol for finding where abstraction survives; this entry states it as a test of the context
+handed to an agent, approached from the other end. The two constraints are the same two — uniform
+shape, per-domain results — and they are not re-derived here.
+
 ## 2026-09-23 — Ontology derived from who will act on it
 
 The conventional order is to model the domain first and hope for adoption afterwards. The

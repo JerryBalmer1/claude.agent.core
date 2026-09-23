@@ -109,11 +109,16 @@ that mode is itself a gate that must be gated and receipted, or the measurement 
 hole in the thing it measures. `docs/IDEAS.md` already makes the equivalent point about its own
 injection harness: a test double reachable from the runtime is an attack surface, not a test.
 
-[analysis] **Cost of proof.** Gate overhead is unpublished, here and everywhere. A gate
-expensive enough to notice gets switched off, and a gate that gets switched off produces exactly
-the silent-gap failure the adversarial catalogue in `docs/IDEAS.md` is about. That makes overhead
-a security property rather than a performance footnote, and it makes the ablation ladder above
-expensive to run without knowing the number first.
+[analysis] **Cost of proof.** Gate *latency* is published — seven sources report it, and
+[`suppressed-outputs.md`](suppressed-outputs.md) → *"Correction — cost of proof is partly
+published"* lists them with their numbers. What is unpublished, there and here, is the cost of the
+**evidence** a gate leaves behind: receipt size per action, and verify time as a function of chain
+length. That is the narrow claim, and it replaces the wider one this file carried until
+2026-09-23 — *"gate overhead is unpublished, here and everywhere"* — which was made before the
+literature was read. A gate expensive enough to notice gets switched off, and a gate that gets
+switched off produces exactly the silent-gap failure the adversarial catalogue in `docs/IDEAS.md`
+is about. That makes overhead a security property rather than a performance footnote, and it makes
+the ablation ladder above expensive to run without knowing the number first.
 
 [analysis] **Portability, named as a seam and left unsolved.** Everything here is GitHub-shaped:
 the six required checks are job keys in a GitHub Actions workflow, `branch-flow` reads a pull

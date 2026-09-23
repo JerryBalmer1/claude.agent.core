@@ -39,3 +39,18 @@ the decisions made about a record belong to whoever is accountable for them.
 The commodity layer here is reproducible by a competent team. The durable position is the
 format and the schema, published, with a conformance suite that shows where other systems
 trust a record they should not.
+
+## The evidence base
+
+Everything above is a position. [`analysis/`](analysis/) is what it was checked against, and it is
+six files: [`analysis/README.md`](analysis/README.md) is the manifest;
+[`analysis/landscape.md`](analysis/landscape.md) records the positions on this page that somebody
+else already holds, with sources; [`analysis/gaps.md`](analysis/gaps.md) records what is left
+unoccupied; [`analysis/refusal.md`](analysis/refusal.md) the structure a refusal record needs
+before it is worth keeping; [`analysis/failure-envelope.md`](analysis/failure-envelope.md) what has
+to be true of a running process for that record to survive the failure it describes; and
+[`analysis/suppressed-outputs.md`](analysis/suppressed-outputs.md) the outputs nobody collects,
+carrying a correction to `gaps.md`. **If you read one thing there, read the falsification
+sections** — the bottom band of `gaps.md` and *"What would make this file wrong"* in
+`suppressed-outputs.md`. They state the conditions under which the position on this page loses, and
+a position whose author has not written those down is a preference.

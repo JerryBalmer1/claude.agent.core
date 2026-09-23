@@ -139,6 +139,17 @@ pins:
       F74 and `AGENTS.md:95-99` freeze the archived record, and a rewritten measurement is a
       falsified one.
 
+## External sources
+
+- [ ] **Analysis sources 1–25 — verify every URL before public.** `docs/analysis/` cites 25
+      external sources. 1–16 are inline and unnumbered across `docs/analysis/landscape.md`,
+      `docs/analysis/gaps.md` and `docs/analysis/refusal.md`; 17–25 are numbered in
+      `docs/analysis/suppressed-outputs.md`, which assigns the numbers rather than continuing a
+      register that exists on disk. **None has been fetched from this tree.** A citation that 404s
+      in public is worse than no citation, because it reads as a fabricated one — and the set's
+      whole convention is that an external claim carries its source in the sentence that makes it,
+      which puts the weight on the URL being real.
+
 ## Known and deferred
 
 - [ ] **Banner URL host.** The `github.com/.../blob/...?raw=true` form is required while the
