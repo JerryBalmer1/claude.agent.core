@@ -15,7 +15,7 @@ file's byte pin (`docs/DECISIONS.md` **D002**, FINDINGS **F88**).
 Import the module by its manifest:
 
 ```powershell
-Import-Module ./src/ledger/Ledger.psd1 -Force
+Import-Module ./modules/ledger/ledger.psd1 -Force
 ```
 
 ## Conventions that apply to all four
@@ -42,7 +42,7 @@ practical notes:
 
 **`-LedgerPath` resolution** (shared by `Invoke-LedgerForce`, `Get-LedgerVerify`,
 `Get-LedgerEntry`): omitted or blank means the default, `.ledger/ledger.jsonl` under the **repo
-root**, computed from the module's own location (`src/ledger/../..`) — so it is the same file
+root**, computed from the module's own location (`modules/ledger/../..`) — so it is the same file
 regardless of your current directory. An absolute path is used as given. A relative path resolves
 against the **caller's** filesystem location, not the module's.
 
@@ -124,7 +124,7 @@ swallow them into a generic error and does not re-raise them under a Ledger id.
 ### Example
 
 ```powershell
-Import-Module ./src/ledger/Ledger.psd1 -Force
+Import-Module ./modules/ledger/ledger.psd1 -Force
 
 $r = Invoke-LedgerForce -Verbose `
     -Prompt 'Write a Python function add(a, b) that returns a + b. Code only.' `
@@ -210,7 +210,7 @@ timestamps. A **missing** file is an error.
 ### Example
 
 ```powershell
-Import-Module ./src/ledger/Ledger.psd1 -Force
+Import-Module ./modules/ledger/ledger.psd1 -Force
 Get-LedgerVerify -Verbose | Format-List
 
 # Verify a copy without touching the real one
@@ -295,7 +295,7 @@ Nothing. A missing Python or absent key is reported as data, not raised.
 ### Example
 
 ```powershell
-Import-Module ./src/ledger/Ledger.psd1 -Force
+Import-Module ./modules/ledger/ledger.psd1 -Force
 Get-LedgerStatus | Format-List
 ```
 
