@@ -464,13 +464,22 @@ function New-PullRequestTemplate {
         & $add ('`review.mode` is `{0}`: the automerge workflow stands down. A human merges this.' -f $Config.review.mode)
     }
     & $add ''
+    # The Wall states each rule WITHOUT naming a path, and that is not a style preference. This
+    # template is the body a contributor fills in, and the pr-body-links step of `trailer-guard`
+    # requires every path named in a body to be a sha-pinned permalink. A generated template
+    # cannot carry one: it is rendered once, with no sha to pin to. So the boxes as shipped used
+    # to fail the check they ship with, on `src/`, `modules/` and the Python prefix -- three reds
+    # a contributor could only clear by editing a generated file. A rule nobody can satisfy is a
+    # rule that gets switched off, so the rule is named here and the paths stay in the policy
+    # document, which is rendered from the same config two functions above.
     & $add '## Wall'
     & $add ''
-    & $add '- [ ] No module code under `src/` or `modules/` unless a run order says so'
+    & $add '- [ ] No module code outside the modules a run order named'
     & $add '- [ ] No sibling repository was touched'
     & $add '- [ ] No container surface was added - substrate is never a container'
-    & $add ('- [ ] No `.py` outside {0}' -f
-            (($Config.runtimes.python.allowed_under | ForEach-Object { "``$_``" }) -join ', '))
+    $pyPrefixCount = @($Config.runtimes.python.allowed_under).Count
+    $pyPhrase = if ($pyPrefixCount -eq 1) { 'the one prefix' } else { "one of the $pyPrefixCount prefixes" }
+    & $add ('- [ ] No Python outside {0} the runtime rule permits' -f $pyPhrase)
 
     return $lines.ToArray()
 }
