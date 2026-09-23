@@ -4,6 +4,8 @@
   CI check "generated-match-config" fails the build if this file and the config disagree.
 -->
 
+![claude.agent.core](https://raw.githubusercontent.com/JerryBalmer1/claude.agent.core/develop/assets/header.svg)
+
 ## What
 
 <!-- What is true after this merges, in prose. Not a list of what you did -- what is different, and how would someone tell? -->

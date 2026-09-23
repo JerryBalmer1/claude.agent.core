@@ -73,6 +73,49 @@ function Get-SectionFlag {
     return [bool]$prop.Value
 }
 
+function Get-OptionalValue {
+    <#
+        StrictMode-safe read of an optional property, with the default applied here for the same
+        reason Get-SectionFlag applies its own: a JSON Schema `default` is an annotation, and
+        nothing writes the property into the parsed object.
+    #>
+    param(
+        [Parameter(Mandatory)] [AllowNull()] $Object,
+        [Parameter(Mandatory)] [string]$Name,
+        $Default = $null
+    )
+    if ($null -eq $Object) { return $Default }
+    $prop = $Object.PSObject.Properties[$Name]
+    if ($null -eq $prop -or $null -eq $prop.Value) { return $Default }
+    return $prop.Value
+}
+
+function ConvertTo-XmlText {
+    <#
+        The five XML predefined entities, escaped by hand. Config text reaches the SVG through
+        here, so a title containing an ampersand produces a valid document rather than one a
+        browser silently refuses to draw.
+    #>
+    param([Parameter(Mandatory)] [AllowEmptyString()] [string]$Text)
+    return $Text.
+        Replace('&', '&amp;').
+        Replace('<', '&lt;').
+        Replace('>', '&gt;').
+        Replace('"', '&quot;').
+        Replace("'", '&apos;')
+}
+
+function Get-HeaderRawUrl {
+    <#
+        Where the banner lives for a reader who is not inside a checkout. A pull request body is
+        rendered outside the repository, so a relative path resolves to nothing there; the README
+        is rendered inside it, so a relative path is correct there and is what it uses. Both
+        halves of that come out of config: the slug and the long-lived branch name.
+    #>
+    param([Parameter(Mandatory)] $Config)
+    return 'https://raw.githubusercontent.com/{0}/{1}/assets/header.svg' -f $Config.repo, $Config.branches.develop
+}
+
 function Get-RepoConfig {
     if (-not (Test-Path -LiteralPath $ConfigPath)) { throw "config not found: $ConfigPath" }
     $json = [System.IO.File]::ReadAllText($ConfigPath)
@@ -87,6 +130,137 @@ function Get-RepoConfig {
         Write-Warning "schema missing at $SchemaPath - rendering an unvalidated config"
     }
     return ($json | ConvertFrom-Json -Depth 20)
+}
+
+function New-HeaderSvg {
+    <#
+        The committed banner. Pure SVG: no script, no external reference, no font download, no
+        network. That is the whole reason it is generated and committed rather than hotlinked from
+        an image service -- a banner served by somebody else is a dependency that can change what
+        this repository looks like, or stop answering, without a commit.
+
+        ANIMATION IS SMIL, AND THAT IS AN ASSUMPTION, NOT A MEASUREMENT. Nothing here fetched a
+        page to watch it run, so the reasoning is stated instead of a result being claimed. An SVG
+        referenced from Markdown is loaded as an IMAGE, and in that context a browser runs
+        declarative animation but refuses script and external resources. <animate> and
+        <animateTransform> are declarative and need no <style> element, so they survive a
+        sanitiser that strips <style> as well as one that strips <script>; a CSS @keyframes
+        version would depend on <style> surviving the trip. If the banner ever renders still,
+        this paragraph is where to look first.
+
+        DETERMINISM. No timestamp, no host name, no randomness, and every coordinate is an
+        integer -- so no decimal separator can vary with culture. Every number derives from
+        height and every colour from palette, which is what makes the drift check evidence
+        rather than decoration.
+
+        The wave animates by interpolating the path's `d` between two phases with an identical
+        segment structure, rather than by translating a double-width band. Translating one would
+        drag the gradient with it and slide the colours; interpolating leaves everything but the
+        crest still.
+    #>
+    param([Parameter(Mandatory)] $Config)
+
+    $header = Get-OptionalValue -Object $Config -Name 'header'
+    if ($null -eq $header) { throw 'New-HeaderSvg: config/repo.json has no header block' }
+
+    $title     = ConvertTo-XmlText ([string](Get-OptionalValue -Object $header -Name 'title'))
+    $subtitle  = ConvertTo-XmlText ([string](Get-OptionalValue -Object $header -Name 'subtitle'  -Default ''))
+    $palette   = @(Get-OptionalValue -Object $header -Name 'palette'   -Default @('111827', '0E7490'))
+    $shape     = [string](Get-OptionalValue -Object $header -Name 'shape'     -Default 'rect')
+    $height    = [int](   Get-OptionalValue -Object $header -Name 'height'    -Default 200)
+    $animation = [string](Get-OptionalValue -Object $header -Name 'animation' -Default 'none')
+
+    $w      = 1200
+    $waveH  = if ($shape -in @('wave', 'waving')) { 40 } else { 0 }
+    $bottom = $height - $waveH
+    $amp    = 16
+
+    # Three periods across the viewBox, walked right to left so the path closes back at the
+    # origin. Both phases have the same segments in the same order, which is what `d`
+    # interpolation requires -- only the control points' sign differs.
+    function Get-WavePath {
+        param([int]$Base, [int]$Amp, [int]$Height, [int]$Width, [int]$Sign)
+        $sb = [System.Text.StringBuilder]::new()
+        [void]$sb.Append("M 0 0 L $Width 0 L $Width $Base")
+        $period = [int]($Width / 3)
+        for ($x = $Width; $x -gt 0; $x -= $period) {
+            $c1x = $x - [int]($period / 4)
+            $c2x = $x - [int]($period * 3 / 4)
+            $c1y = $Base + ($Sign * $Amp)
+            $c2y = $Base - ($Sign * $Amp)
+            [void]$sb.Append(" C $c1x $c1y, $c2x $c2y, $($x - $period) $Base")
+        }
+        [void]$sb.Append(' Z')
+        return $sb.ToString()
+    }
+
+    $lines = [System.Collections.Generic.List[string]]::new()
+    $add = { param([string]$s) $lines.Add($s) }
+
+    & $add '<?xml version="1.0" encoding="UTF-8"?>'
+    & $add '<!--'
+    & $add '  GENERATED FILE - DO NOT EDIT BY HAND.'
+    & $add '  Rendered from config/repo.json by scripts/Generate-Policy.ps1.'
+    & $add '  CI check "generated-match-config" fails the build if this file and the config disagree.'
+    & $add '-->'
+    & $add ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {0} {1}" width="{0}" height="{1}" role="img" aria-label="{2}">' -f $w, $height, $title)
+    & $add '  <defs>'
+    & $add '    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="0">'
+    if ($palette.Count -eq 1) {
+        & $add ('      <stop offset="0%" stop-color="#{0}"/>' -f $palette[0])
+    }
+    else {
+        for ($i = 0; $i -lt $palette.Count; $i++) {
+            $offset = [int](($i * 100) / ($palette.Count - 1))
+            & $add ('      <stop offset="{0}%" stop-color="#{1}"/>' -f $offset, $palette[$i])
+        }
+    }
+    & $add '    </linearGradient>'
+    & $add '  </defs>'
+
+    switch ($shape) {
+        'rounded' { & $add ('  <rect x="0" y="0" width="{0}" height="{1}" rx="24" fill="url(#bg)"/>' -f $w, $height) }
+        'soft'    { & $add ('  <rect x="0" y="0" width="{0}" height="{1}" rx="48" fill="url(#bg)"/>' -f $w, $height) }
+        'rect'    { & $add ('  <rect x="0" y="0" width="{0}" height="{1}" fill="url(#bg)"/>' -f $w, $height) }
+        default   {
+            $phaseA = Get-WavePath -Base $bottom -Amp $amp -Height $height -Width $w -Sign 1
+            if ($shape -eq 'waving') {
+                $phaseB = Get-WavePath -Base $bottom -Amp $amp -Height $height -Width $w -Sign -1
+                & $add ('  <path fill="url(#bg)" d="{0}">' -f $phaseA)
+                & $add ('    <animate attributeName="d" values="{0};{1};{0}" dur="7s" repeatCount="indefinite"/>' -f $phaseA, $phaseB)
+                & $add '  </path>'
+            }
+            else {
+                & $add ('  <path fill="url(#bg)" d="{0}"/>' -f $phaseA)
+            }
+        }
+    }
+
+    # A system font stack, because an SVG loaded as an image cannot fetch a webfont. Which glyphs
+    # a given machine draws is not deterministic; the BYTES are, and the bytes are what is checked.
+    $titleSize = [int][math]::Max(28, [math]::Floor($height * 0.19))
+    $subSize   = [int][math]::Max(14, [math]::Floor($height * 0.085))
+    $titleY    = [int][math]::Floor($height * 0.44)
+    $subY      = [int][math]::Floor($height * 0.62)
+    $font      = 'Segoe UI, Ubuntu, Helvetica Neue, Arial, sans-serif'
+    $startOpacity = if ($animation -eq 'fadeIn') { '0' } else { '1' }
+
+    & $add ('  <g text-anchor="middle" font-family="{0}" fill="#FFFFFF" opacity="{1}">' -f $font, $startOpacity)
+    switch ($animation) {
+        'fadeIn'    { & $add '    <animate attributeName="opacity" from="0" to="1" dur="1400ms" fill="freeze"/>' }
+        'twinkling' { & $add '    <animate attributeName="opacity" values="1;0.4;1" dur="3s" repeatCount="indefinite"/>' }
+        default     { }
+    }
+    & $add ('    <text x="{0}" y="{1}" font-size="{2}" font-weight="700" letter-spacing="1">{3}</text>' -f
+            [int]($w / 2), $titleY, $titleSize, $title)
+    if ($subtitle) {
+        & $add ('    <text x="{0}" y="{1}" font-size="{2}" opacity="0.82">{3}</text>' -f
+                [int]($w / 2), $subY, $subSize, $subtitle)
+    }
+    & $add '  </g>'
+    & $add '</svg>'
+
+    return $lines.ToArray()
 }
 
 function New-PolicyMarkdown {
@@ -227,6 +401,16 @@ function New-PullRequestTemplate {
     & $add '  CI check "generated-match-config" fails the build if this file and the config disagree.'
     & $add '-->'
     & $add ''
+    # The banner, by absolute raw URL rather than by relative path: a pull request body is
+    # rendered outside the repository and a relative path resolves to nothing there. The README
+    # is rendered inside it and uses the relative path instead. A URL is not a path token, so
+    # pr-body-links has nothing to say about this line -- confirmed by running it on the
+    # generated template, not assumed.
+    $headerBlock = Get-OptionalValue -Object $Config -Name 'header'
+    if ($null -ne $headerBlock) {
+        & $add ('![{0}]({1})' -f (Get-OptionalValue -Object $headerBlock -Name 'title'), (Get-HeaderRawUrl -Config $Config))
+        & $add ''
+    }
     # A collapsible section is <details> rather than `## heading`, because the sections this
     # template asks for are not the same size: How is one block per commit and grows with the
     # branch, Verify is a wall of pasted output. Both are worth having and neither is worth
@@ -300,6 +484,13 @@ $targets = @(
     @{ Path = (Join-Path $RepoRoot 'docs/POLICY.md');                    Bytes = (ConvertTo-LfBytes (New-PolicyMarkdown      -Config $config)) }
     @{ Path = (Join-Path $RepoRoot '.github/PULL_REQUEST_TEMPLATE.md');  Bytes = (ConvertTo-LfBytes (New-PullRequestTemplate -Config $config)) }
 )
+
+# The banner is registered only when the config asks for one. A sibling repository that vendors
+# core and omits the header block renders two files, not three, and its drift check stays honest
+# about that rather than reporting a missing file it was never meant to have.
+if ($null -ne (Get-OptionalValue -Object $config -Name 'header')) {
+    $targets += @{ Path = (Join-Path $RepoRoot 'assets/header.svg'); Bytes = (ConvertTo-LfBytes (New-HeaderSvg -Config $config)) }
+}
 
 if ($Check) {
     $drift = 0

@@ -1,3 +1,5 @@
+![claude.agent.core](assets/header.svg)
+
 # claude.agent.core
 
 The substrate the agent tooling is built on: branch flow, the checks that enforce it, a forensic

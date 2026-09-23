@@ -57,5 +57,13 @@
       { "heading": "Verify", "collapsible": true, "prompt": "The check table, pester counts, and the forensic tip. Paste what you measured, not what you expected." }
     ]
   },
+  "header": {
+    "title": "claude.agent.core",
+    "subtitle": "provenance and gating for agents",
+    "palette": [ "111827", "0E7490" ],
+    "shape": "waving",
+    "height": 200,
+    "animation": "fadeIn"
+  },
   "owners": [ "@JerryBalmer1" ]
 }
