@@ -464,7 +464,7 @@ the file. Same family as F84 and F85: the incomplete answer and the complete one
 shape on the page. What would have caught it is asking *"what else does this file claim?"* once per
 file rather than once per finding.
 
-## F87 — `pr-body-links` has rejected its own author's draft four times, and the fourth was the body that records the first three
+## F87 — `pr-body-links` has rejected its own author's draft on four pull requests, and the fourth was the body that records the first three
 
 Measured 2026-09-23. `scripts/ci/Test-PrBodyLinks.ps1` has refused a pull request body written by
 the agent that wrote the check, on **PR #13**, **PR #16**, **PR #20** — and then on the draft body
@@ -491,16 +491,26 @@ the only legal home for a path that cannot be pinned is a fenced block. A check 
 non-existent path into a fence is drawing the right line: an unpinnable citation is not a citation.
 
 **The fourth, recorded because it happened while this row was being written.** The draft body of
-the pull request that introduces F86, F87 and F88 failed with
-`FAIL -- 5 violation(s) in 30 path token(s)`. All five violations were the **same token**,
-`AGENTS.md`, in five places where it had been written as part of a sentence rather than as link
-text — including a heading quoting a commit subject, *"docs: AGENTS.md names the repository it
-governs"*, where the path is a word in the sentence being quoted. The corrected body passed at
-`27 path token(s) checked`.
+the pull request that introduces F86, F87 and F88 was rejected **twice**.
 
-So the failure mode is not ignorance of the rule. It is that a path reads as prose to the author
-and as a citation to the check, and the author cannot see the difference in their own sentence.
-That is the case the rule exists for, and four for four is the argument for keeping it.
+```text
+round 1   FAIL -- 5 violation(s) in 30 path token(s)     all five the same token: AGENTS.md
+round 2   FAIL -- 1 violation(s) in 29 path token(s)     the same token, once more
+round 3   PASS
+```
+
+Round 1's five were one token in five sentences — written as prose, including inside a heading
+quoting a commit subject, where the path is a word in the sentence being quoted. Round 2's one was
+**that same token inside the sentence describing round 1**. Writing about the violation reproduced
+it. Moving the literal into a fenced block is what finally passed, fences being the one exemption.
+
+**The count here is pull requests, not rounds**, and it is four: #13, #16, #20, and the one this
+row rides in. Rounds are not worth counting, because the number moves while the body is being
+written and a row that chases it is stale on arrival. The mechanism is the finding.
+
+And the mechanism is not ignorance of the rule. A path reads as prose to the author and as a
+citation to the check, and the author cannot see the difference **in their own sentence** — least
+of all in a sentence whose subject is the check. Four for four is the argument for keeping it.
 
 **A second defect, found while measuring the above.** The script's own worked example at
 `scripts/ci/Test-PrBodyLinks.ps1:61` is wrong:
