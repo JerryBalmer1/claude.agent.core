@@ -7,6 +7,30 @@ manifest and its own Pester suite beside it.
 It is **not** a container and it does not build one. `src/` holds nothing but `.gitkeep`; module
 code needs a run order that says so. Nothing here reaches the network except CI reaching GitHub.
 
+## Scope
+
+Two things are in scope today, and the things that are not are named here so the boundary is
+explicit rather than accidental.
+
+**Provenance.** Tamper-evident receipts of what an agent did: hash-chained, append-only, and
+verifiable without trusting the agent that produced them.
+
+**Gating.** Enforcement of what an agent is permitted to do, applied before it acts rather than
+reported after.
+
+Two further concerns are **deliberately out of scope for v1**.
+
+**Judgment** — deciding whether recorded actions satisfy a control, a standard or a policy. This
+repository records and constrains; it does not evaluate.
+
+**Attribution and consequence** — what happens when judgment fails: notification, rollback, merge
+blocking, sign-off and ownership.
+
+Neither is a gap. Both are planned layers built on top of this one: a layer that judges needs
+something trustworthy to judge, and a layer that assigns consequence needs a judgment to act on.
+Each is downstream of provenance and gating by construction, and each belongs in its own place
+rather than here.
+
 ## Status
 
 **Born 2026-09-22 at `v0.2.0`.** This repository is a clean copy of `claude.agent.substrate` at
