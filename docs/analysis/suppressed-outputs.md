@@ -168,8 +168,9 @@ behind does not. F91 is one point on the second question and the first question 
 
 [analysis] This section exists because the wide claim appeared here first, and correcting it in
 place would leave no record that it had been made. `docs/IDEAS.md` -> *"Cost of proof"* and
-`docs/PRE-PUBLIC.md` -> *"Open questions with no owner"* still carry the wide phrasing; they are
-named here and not edited, because this commit's scope is `docs/analysis/`.
+`docs/PRE-PUBLIC.md` -> *"Open questions with no owner"* still carried the wide phrasing when this
+section was written; they were named here and not edited, because that commit's scope was
+`docs/analysis/`. Both were narrowed at `3032081`.
 
 ## What would make this file wrong
 

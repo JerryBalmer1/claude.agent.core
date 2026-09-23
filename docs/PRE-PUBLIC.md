@@ -122,18 +122,18 @@ pins:
 - [ ] **`tests/AutoMerge.Tests.ps1:81` and `:96`** pass `JerryBalmer1/claude.agent.substrate` as
       the repository argument. The tests pass; the string is a fixture, not a pin, and it is the
       wrong repository.
-- [ ] **Prose and comments carrying the old name**: `tests/Skeleton.Tests.ps1:87`, `:117`, `:119`;
+- [ ] **Prose and comments carrying the old name**: `tests/Skeleton.Tests.ps1:87` and `:119`;
       `schemas/repo.schema.json:101`; `scripts/ci/Test-Runtimes.ps1:7-8`, `:33`, `:62`;
-      `scripts/forensic.ps1:10`; `scripts/Generate-Policy.ps1:486` (which renders into the shipped
-      PR template as *"substrate is never a container"*); `scripts/Invoke-AutoMerge.ps1:50`.
+      `scripts/forensic.ps1:10`; `scripts/Invoke-AutoMerge.ps1:50`.
 
-      **`AGENTS.md:117` belongs on this list and was missed.** Added 2026-09-23 while resolving
-      `AGENTS.md:3`: the wall reads *"Substrate is never a container"*, which
-      `git grep -in substrate` finds and the case-sensitive `git grep -n substrate` does not. It
-      is the same sentence `scripts/Generate-Policy.ps1:486` renders into
-      `.github/PULL_REQUEST_TEMPLATE.md:66`, so the law text and the generated template text move
-      together or they disagree — which is what puts `AGENTS.md:117` in this bullet rather than in
-      the resolved one above.
+      **`AGENTS.md:117` and `scripts/Generate-Policy.ps1:486` were on this list and are resolved
+      at `ff6aae6`.** The wall read *"Substrate is never a container"*, which the case-sensitive
+      `git grep -n substrate` never found. It is the same sentence
+      `scripts/Generate-Policy.ps1:486` renders into `.github/PULL_REQUEST_TEMPLATE.md:66`, so the
+      law text and the generated template text had to move together; they did, and the template
+      changed by generation rather than by hand. All three now read *"core is never a container"*.
+      `tests/Skeleton.Tests.ps1:117` left this list separately — the test **name** was renamed to
+      match the law. Its `-Because` string at `:119` still carries the old name and is still here.
 
       `docs/plans/**` also carries it throughout and is **excluded from this line on purpose**:
       F74 and `AGENTS.md:95-99` freeze the archived record, and a rewritten measurement is a

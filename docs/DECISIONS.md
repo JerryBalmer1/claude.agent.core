@@ -64,8 +64,9 @@ until somebody does, the six stand. If they are ever lifted, this paragraph is t
 receipt **seq 4**, subject `retire-ledger-psm1-pin`.
 
 **Enforced by an absence, which is the hard part to see.** There is **no row** for `ledger.psm1`
-in the `Files` array at `modules/ledger/tests/fixtures/copied-blobs.psd1:30-41`. Ten rows are
-there; that one is not, and neither is `ledger.psd1`. Nothing asserts the module's bytes against
+in the `Files` array at `modules/ledger/tests/fixtures/copied-blobs.psd1:41-51`. Nine rows are
+there; that one is not, and neither is `ledger.psd1`. The tenth was `docs/commands.md`, retired at
+`88d507b` under this decision, one axis over. Nothing asserts the module's bytes against
 `claude.build.ledger@d57938d` at HEAD, and that is the enforcement: the check that would fail if
 core edited its own ledger module does not exist, deliberately.
 

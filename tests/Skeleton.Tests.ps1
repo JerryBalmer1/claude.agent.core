@@ -114,7 +114,7 @@ Describe 'the wall holds' {
         (Join-Path $script:RepoRoot 'vendor') | Should -Not -Exist
     }
 
-    It 'substrate is never a container' {
+    It 'core is never a container' {
         foreach ($f in 'Dockerfile', 'Containerfile', 'docker-compose.yml', '.dockerignore') {
             (Join-Path $script:RepoRoot $f) | Should -Not -Exist -Because 'image builder builds containers; substrate is consumed by it'
         }
