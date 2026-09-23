@@ -4,7 +4,7 @@
   CI check "generated-match-config" fails the build if this file and the config disagree.
 -->
 
-![claude.agent.core](https://raw.githubusercontent.com/JerryBalmer1/claude.agent.core/develop/assets/header.svg)
+![claude.agent.core](https://github.com/JerryBalmer1/claude.agent.core/blob/develop/assets/header.svg?raw=true)
 
 ## What
 

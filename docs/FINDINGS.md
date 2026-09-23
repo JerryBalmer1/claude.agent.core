@@ -265,3 +265,46 @@ a different thing from one whose weakness is found later by whoever trusted it.
 
 **Closes** when the account is Pro or the repository is public *and* the three calls in
 `docs/PROTECTION.md` → "What was attempted" succeed, re-run unchanged. BACKLOG **B12**.
+
+## F81 — the PR banner never rendered, and the reason was the host
+
+`.github/PULL_REQUEST_TEMPLATE.md` pointed at the banner by
+`https://raw.githubusercontent.com/JerryBalmer1/claude.agent.core/develop/assets/header.svg`. A
+rendered pull request body fetches that image with no credentials, and `raw.githubusercontent.com`
+is an unauthenticated origin: while this repository is private it answers **404** to that fetch
+whatever is on `develop`. The banner was therefore broken in every pull request body this template
+has ever produced, and nothing about the SVG's contents was ever reached. The README renders the
+same file because it uses a relative path, which GitHub resolves inside the viewer's own session.
+
+Measured 2026-09-23 (UTC), from a clean shell:
+
+| Fetch | Credentials | Result |
+|---|---|---|
+| `raw.githubusercontent.com/JerryBalmer1/claude.agent.core/develop/assets/header.svg` | none | **404**, 14 bytes, `text/plain` |
+| `api.github.com/repos/JerryBalmer1/claude.agent.core/contents/assets/header.svg?ref=develop` | `gh` token | **200**, 1542 bytes |
+| `github.com/JerryBalmer1/claude.agent.core/blob/develop/assets/header.svg?raw=true` | none | **404**, HTML |
+| the same blob URL | `Authorization: Bearer <gh token>` | **404**, HTML |
+
+Row 2 is the control: the asset exists and is 1542 bytes on `develop`. Row 1 is the finding. The
+failure is the origin, not the file.
+
+The fix is the blob URL — `https://github.com/<slug>/blob/<branch>/assets/header.svg?raw=true` —
+which GitHub serves through the requesting browser's own session, so it reaches every viewer who
+can already see the pull request and nobody else. Both halves still come from `config/repo.json`;
+the change is one line of `Get-HeaderRawUrl` and one line of the generated template.
+
+**What a script cannot measure.** Row 4 is the honest limit. `github.com` blob routes authenticate
+by session cookie and reject a bearer token, so an authorised principal fetching the blob URL from
+a shell gets 404 as well. A logged-in browser is the only client that can observe the rendered
+banner. This finding claims what it measured — the raw host cannot serve a private repository's
+asset, and the blob host is the one GitHub resolves against the viewer's session — and does not
+claim to have seen the image render.
+
+**Neither URL helps an anonymous reader.** Until this repository is public the banner is visible
+only to people who can already see the pull request, which is everyone it is for. BACKLOG **B13**
+revisits the host on the day that changes.
+
+**Prior reasoning, corrected.** An earlier report explained this as SMIL animation stripped by
+GitHub's markdown sanitiser. That was a guess about the SVG's contents, and the request never got
+far enough to have contents. Recorded here because the wrong explanation was plausible and cost a
+measurement to displace — which is what "measurement beats expectation" is for.
