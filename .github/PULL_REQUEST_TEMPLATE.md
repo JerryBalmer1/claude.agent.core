@@ -15,6 +15,10 @@
 
 </details>
 
+## Said vs did
+
+<!-- Every place this pull request departs from what was asked, and why. Write "none" if none. -->
+
 ## Why
 
 <!-- The control this serves, or the constraint it removes. Short. -->
@@ -55,7 +59,7 @@ Tick exactly one. Any other pair fails the `branch-flow` check.
 
 ## Wall
 
-- [ ] No module code under `src/` or `modules/` unless a run order says so
+- [ ] No module code outside the modules a run order named
 - [ ] No sibling repository was touched
 - [ ] No container surface was added - substrate is never a container
-- [ ] No `.py` outside `modules/ledger/python/`
+- [ ] No Python outside the one prefix the runtime rule permits
