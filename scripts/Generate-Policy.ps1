@@ -111,9 +111,15 @@ function Get-HeaderRawUrl {
         rendered outside the repository, so a relative path resolves to nothing there; the README
         is rendered inside it, so a relative path is correct there and is what it uses. Both
         halves of that come out of config: the slug and the long-lived branch name.
+
+        The host is github.com/<slug>/blob/<branch>/...?raw=true, not raw.githubusercontent.com.
+        raw.githubusercontent is an unauthenticated origin: while this repository is private it
+        answers 404 to the image fetch a rendered PR body makes, whatever is on the branch --
+        measured, not assumed, and recorded in FINDINGS. The blob URL is served through the
+        viewer's own session, so it renders for everyone who can already see the pull request.
     #>
     param([Parameter(Mandatory)] $Config)
-    return 'https://raw.githubusercontent.com/{0}/{1}/assets/header.svg' -f $Config.repo, $Config.branches.develop
+    return 'https://github.com/{0}/blob/{1}/assets/header.svg?raw=true' -f $Config.repo, $Config.branches.develop
 }
 
 function Get-RepoConfig {
@@ -401,11 +407,12 @@ function New-PullRequestTemplate {
     & $add '  CI check "generated-match-config" fails the build if this file and the config disagree.'
     & $add '-->'
     & $add ''
-    # The banner, by absolute raw URL rather than by relative path: a pull request body is
-    # rendered outside the repository and a relative path resolves to nothing there. The README
-    # is rendered inside it and uses the relative path instead. A URL is not a path token, so
-    # pr-body-links has nothing to say about this line -- confirmed by running it on the
-    # generated template, not assumed.
+    # The banner, by absolute URL rather than by relative path: a pull request body is rendered
+    # outside the repository and a relative path resolves to nothing there. The README is
+    # rendered inside it and uses the relative path instead. Which absolute host, and why it is
+    # not raw.githubusercontent while this repository is private, is in Get-HeaderRawUrl. A URL
+    # is not a path token, so pr-body-links has nothing to say about this line -- confirmed by
+    # running it on the generated template, not assumed.
     $headerBlock = Get-OptionalValue -Object $Config -Name 'header'
     if ($null -ne $headerBlock) {
         & $add ('![{0}]({1})' -f (Get-OptionalValue -Object $headerBlock -Name 'title'), (Get-HeaderRawUrl -Config $Config))
