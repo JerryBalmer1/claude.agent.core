@@ -74,7 +74,7 @@ Measured 2026-09-23 at `1990d90` unless a line says otherwise.
 
       | File | State |
       |---|---|
-      | `modules/ledger/README.md:10-17` | **stale** — *"Four exported functions and one alias, exactly as the source module exported them"*, over a four-row table with no `Add-LedgerRecord` |
+      | `modules/ledger/README.md:10-17` | **corrected at `71463a0`** — five rows, and the prose now names the `ledger.psd1` and `ledger.psm1` lines it was measured against |
       | `modules/ledger/docs/commands.md:3-8` | **stale, twice** — *"Four exported functions and one alias"* plus the literal four-name `FunctionsToExport` line, and it cites `../src/ledger/Ledger.psd1`, a path that does not exist in this layout |
       | `modules/ledger/docs/theory-of-operation.md` | **not stale on this axis** — it states no export list at all, and names `Add-LedgerRecord` at `:123` |
       | `docs/theory-of-operation.md` | **does not exist.** The seed list named it; there is no such file at the repository root |
@@ -84,6 +84,18 @@ Measured 2026-09-23 at `1990d90` unless a line says otherwise.
       problem as BACKLOG **B10** — the edit and the pin move together or neither moves.
       `modules/ledger/README.md` is **not** pinned; no row in that file names it, so it can simply
       be corrected.
+
+      **Half of this is done, and the half that is not got measured.**
+      `modules/ledger/README.md` was corrected at `71463a0`. That commit also found two false
+      claims in the same file that this line did not measure, because this line measures one axis
+      and a file has more than one: a byte-identity claim about `ledger.psm1` that
+      `git hash-object` refutes, and a test F76 deleted. **F86.**
+
+      `modules/ledger/docs/commands.md` is untouched. Retiring its pin **alone** turns
+      `modules/ledger/tests/ledger.Tests.ps1:348` red — measured, *"Expected 10, because the table
+      must not be empty, but got 9"*, suite `206` to `205 passed / 1 failed`. So the move is three
+      files, not two, and the third is a `.ps1`. BACKLOG **B16** holds it; **F88** holds the
+      measurement.
 
 ## Seed items that were not found where they were claimed
 
@@ -100,8 +112,13 @@ silence is not.
 What **is** there, and is a different problem, is old-lineage *naming* rather than old-lineage
 pins:
 
-- [ ] **`AGENTS.md:3` opens "Law for any agent working in `claude.agent.substrate`"** — the
-      governing file of this repository names a different repository in its first sentence.
+- [x] **`AGENTS.md:3` opened "Law for any agent working in `claude.agent.substrate`"** — the
+      governing file of this repository named a different repository in its first sentence.
+      **Resolved at `cbb8dbf`.** It now names `claude.agent.core`, which is the slug at
+      `config/repo.json:3` and the one the `origin` remote resolves to.
+      `git grep -n substrate -- AGENTS.md` went `2` to `1`; the remaining match is `AGENTS.md:108`,
+      which cites `docs/plans/2026-09-22-substrate-cutover/RUN-ORDER.md` — a directory that exists,
+      so the string is a live path and not a naming defect.
 - [ ] **`tests/AutoMerge.Tests.ps1:81` and `:96`** pass `JerryBalmer1/claude.agent.substrate` as
       the repository argument. The tests pass; the string is a fixture, not a pin, and it is the
       wrong repository.
@@ -109,6 +126,14 @@ pins:
       `schemas/repo.schema.json:101`; `scripts/ci/Test-Runtimes.ps1:7-8`, `:33`, `:62`;
       `scripts/forensic.ps1:10`; `scripts/Generate-Policy.ps1:486` (which renders into the shipped
       PR template as *"substrate is never a container"*); `scripts/Invoke-AutoMerge.ps1:50`.
+
+      **`AGENTS.md:117` belongs on this list and was missed.** Added 2026-09-23 while resolving
+      `AGENTS.md:3`: the wall reads *"Substrate is never a container"*, which
+      `git grep -in substrate` finds and the case-sensitive `git grep -n substrate` does not. It
+      is the same sentence `scripts/Generate-Policy.ps1:486` renders into
+      `.github/PULL_REQUEST_TEMPLATE.md:66`, so the law text and the generated template text move
+      together or they disagree — which is what puts `AGENTS.md:117` in this bullet rather than in
+      the resolved one above.
 
       `docs/plans/**` also carries it throughout and is **excluded from this line on purpose**:
       F74 and `AGENTS.md:95-99` freeze the archived record, and a rewritten measurement is a
