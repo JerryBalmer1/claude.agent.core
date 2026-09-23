@@ -308,3 +308,41 @@ revisits the host on the day that changes.
 GitHub's markdown sanitiser. That was a guess about the SVG's contents, and the request never got
 far enough to have contents. Recorded here because the wrong explanation was plausible and cost a
 measurement to displace — which is what "measurement beats expectation" is for.
+
+## F82 — the meta-repository trigger was already met on the day it was written down
+
+BACKLOG **B14** records a `claude.agent.meta` repository as something named and not built. The text
+it was dictated from set the trigger at "four or more `claude.agent.*` repos" and described the
+present as "premature at two repos". Both halves of that were checked against the account rather
+than against memory, on 2026-09-23 (UTC):
+
+| Repository | Visibility | Created |
+|---|---|---|
+| `claude.agent.core` | private | 2026-09-22 |
+| `claude.agent.docs` | private | 2026-09-21 |
+| `claude.agent.images` | private | 2026-09-21 |
+| `claude.agent.interrogator` | private | 2026-09-21 |
+| `claude.agent.substrate` | private | 2026-09-21 |
+| `claude.agent.tools` | private | 2026-09-21 |
+
+Six, not two. Each has a local clone with an `origin` remote. The trigger was met before the line
+proposing it was written, so B14 is an **open decision, not a deferral** — the count that was
+standing in for the judgement is already past, and the judgement has to be made on its own terms.
+
+**The second trigger is live too, and it is the more interesting one.** The candidate artifact named
+was the images anchor. Measured: `915be889a0cc5fbf3d5af557b89b24f885afe78addf66ef07f1a893ac8d8715a`
+is the `self` of seq 1 — the only record in that chain — and it is stored at
+`.continuity/forensic.jsonl` **inside `claude.agent.images` itself**. An anchor kept only in the
+repository it attests is witnessed by the thing it exists to witness, which is not a witness. That
+is the artifact with nowhere of its own to live.
+
+**What this finding does not say.** It does not say build the repository. A single file outside every
+repository anchors that hash exactly as well as a seventh repository would, costs nothing to create
+and nothing to maintain, and that remains the argument against building one. The measurement removes
+a reason that was doing the work of a decision; it does not make the decision.
+
+Reproduce:
+
+```powershell
+gh repo list JerryBalmer1 --limit 100 --json name --jq '.[] | select(.name | startswith("claude.agent.")) | .name'
+```
