@@ -26,8 +26,10 @@ repository records and constrains; it does not evaluate.
 **Attribution and consequence** — what happens when judgment fails: notification, rollback, merge
 blocking, sign-off and ownership.
 
-Neither is a gap. Both are planned layers built on top of this one: a layer that judges needs
-something trustworthy to judge, and a layer that assigns consequence needs a judgment to act on.
+Both are out of scope for this repository and neither is built anywhere else yet — the boundary
+says where the work belongs, not that the work is done. They are planned layers built on top of
+this one: a layer that judges needs something trustworthy to judge, and a layer that assigns
+consequence needs a judgment to act on.
 Each is downstream of provenance and gating by construction, and each belongs in its own place
 rather than here.
 
@@ -38,32 +40,43 @@ rather than here.
 none of the history: the initial commit is the one commit in this repository's life that is not a
 merge, and `docs/FINDINGS.md` F74 names every path that was not carried and why.
 
-The suite is **162 tests, 0 failed**. The source measured 188: 27 were removed and 1 was added.
+The suite is **161 tests, 0 failed**, and was **162** at birth. The source measured 188: 27 were
+removed and 1 was added.
 The 27 are not a regression — every one of them asserted a fact about the source repository's own
 git history, pinned commit shas as fixtures, a trailerless root commit, a grandfather exemption
 file, none of which a clean copy has. F78 names all 27, and BACKLOG B11 rebuilds the ones worth
 rebuilding against synthetic repositories the test itself constructs. The 1 that was added pins a
 file mode in the index, because the copy carried bytes and not modes and only Linux CI could see
-it (F79).
+it (F79). The one test that has gone since birth is the `ledger.psm1` blob row in
+`modules/ledger/tests/fixtures/copied-blobs.psd1`, retired when core exported `Add-LedgerRecord`:
+birth fidelity to `claude.build.ledger` is recorded at the birth commit, and re-asserting it at
+every HEAD would forbid core from ever changing its own ledger module.
 
 `docs/plans/2026-09-22-substrate-cutover/verify.ps1` re-derives this release's claims and reports
-**17 of 19**. The two reds are F70 and are by design: `modules/plans/plans.psd1` and
+**15 of 19**. Four reds, all by design. Two are F70: `modules/plans/plans.psd1` and
 `modules/plans/PlanValidator.ps1` are pinned to bytes that the Phase 7 rewrite deliberately moved.
-Run it from `develop`; run from `main` it reports 16 because `main -> develop` matches no row in
-`config.flow`, which is a fact about the branch name and not about the tree (F76, BACKLOG B9).
+Two arrived with the `Add-LedgerRecord` export — `ledger.psd1` exports five functions where the
+pin expects four, and `ledger.psm1` hashes to `ba9c8efa` rather than to the copied blob, which is
+the pin this repository retired on purpose. `verify.ps1` is the archived record of the migration
+and is not rewritten to match a later tree, because a rewritten measurement is a falsified one, so
+it will go on reporting these until something replaces it. Run it from `develop`; run from `main`
+it reports one fewer because `main -> develop` matches no row in `config.flow`, which is a fact
+about the branch name and not about the tree (F76, BACKLOG B9).
 
 | Module | Import path | Suite | Tests |
 |---|---|---|---|
-| `ledger` | `modules/ledger/ledger.psd1` | `modules/ledger/tests/` | **91** |
+| `ledger` | `modules/ledger/ledger.psd1` | `modules/ledger/tests/` | **90** |
 | `policy` | `modules/policy/policy.psd1` | `modules/policy/tests/` | **10** |
 | `plans` | `modules/plans/plans.psd1` | `modules/plans/tests/` | **12** |
 | — | the repository's own suite | `tests/` | **49** |
-| | | **total** | **162** |
+| | | **total** | **161** |
 
 Every figure in that table is measured, not counted by hand. It comes out of
 [`scripts/Measure-Modules.ps1`](scripts/Measure-Modules.ps1), and
 [`verify.ps1`](docs/plans/2026-09-22-substrate-cutover/verify.ps1) parses the table back out of
-this file and compares it to a live run, so the README cannot rot quietly.
+this file and compares it to a live run, so the README cannot rot quietly — except that
+`verify.ps1` is not yet a required check, so nothing in CI runs it and the figures above had
+already rotted once before this commit.
 
 ## Why there is Python here
 
