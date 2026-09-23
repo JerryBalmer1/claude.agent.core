@@ -112,9 +112,11 @@ Describe 'ledger' -Tag 'ledger' {
         }
 
         function Add-Receipt {
-            # Add-LedgerRecord is private. It is reached in the module's own scope rather
-            # than exported for a test, because widening the public surface to make it
-            # testable would change the surface this suite exists to pin.
+            # Add-LedgerRecord was private when this helper was written, and it is called in
+            # the module's own scope for that reason. It is exported now -- for the sentinel,
+            # not for this suite -- and the module-scope call is left alone deliberately: the
+            # fixture chains below were built through this path and changing how they are
+            # written would change what the read-back Contexts are measuring.
             param(
                 [Parameter(Mandatory)][string]$Path,
                 [Parameter(Mandatory)][int]$Attempt,
@@ -343,7 +345,7 @@ Describe 'ledger' -Tag 'ledger' {
         It 'no copied file carries a CR byte, so the shas above are not an accident of checkout' {
             # If a checkout ever produced CRLF, every row above would fail with an opaque hash
             # mismatch. This says the cause out loud instead.
-            @($script:CopiedBlobs).Count | Should -Be 11 -Because 'the table must not be empty'
+            @($script:CopiedBlobs).Count | Should -Be 10 -Because 'the table must not be empty'
             $offenders = foreach ($c in $script:CopiedBlobs) {
                 $bytes = [System.IO.File]::ReadAllBytes((Join-Path $script:ModuleRoot $c.Path))
                 if ($bytes -contains 13) { $c.Path }
@@ -354,9 +356,19 @@ Describe 'ledger' -Tag 'ledger' {
         It 'the falsification control: one appended byte moves the blob sha' {
             # Without this, every row above could be passing because the hash function
             # returns a constant. It does not.
-            $bytes = [System.IO.File]::ReadAllBytes($script:Psm1Path)
-            $pinned = @($script:CopiedBlobs | Where-Object { $_.Path -eq 'ledger.psm1' }).Sha
-            Get-GitBlobSha -Path $script:Psm1Path | Should -BeExactly $pinned
+            #
+            # The control was ledger.psm1 until that row was retired -- core's ledger module
+            # diverges from upstream on purpose now, so it cannot be pinned. It moved to
+            # tests/sandbox/fail_path.ps1, the row least likely to move next: a carried sandbox
+            # script whose single claim was ported into python.Tests.ps1, so nothing maintains
+            # it, and it names no export surface, no version and no dependency. The control
+            # asserts both halves -- the pinned file matches, and one more byte does not.
+            $control = 'tests/sandbox/fail_path.ps1'
+            $pinned  = @($script:CopiedBlobs | Where-Object { $_.Path -eq $control }).Sha
+            $pinned | Should -Not -BeNullOrEmpty -Because 'the control must be a row that is still pinned'
+            $full   = Join-Path $script:ModuleRoot $control
+            $bytes  = [System.IO.File]::ReadAllBytes($full)
+            Get-GitBlobSha -Path $full | Should -BeExactly $pinned
             Get-GitBlobShaOfBytes -Bytes ($bytes + [byte]0x20) | Should -Not -BeExactly $pinned
         }
 
@@ -383,7 +395,7 @@ Describe 'ledger' -Tag 'ledger' {
 
     # ================================================================== module surface
 
-    Context 'the module surface is what the source module exported' {
+    Context "the module surface -- the source module's four, plus the writer core exported" {
 
         It 'imports from the manifest under the bare name ledger' {
             $script:Mod | Should -Not -BeNullOrEmpty
@@ -391,9 +403,10 @@ Describe 'ledger' -Tag 'ledger' {
             $script:Mod.Version.ToString() | Should -BeExactly '0.2.0'
         }
 
-        It 'exports exactly the four functions the source module exported' {
+        It "exports exactly five functions: the source module's four, plus Add-LedgerRecord" {
             @($script:Mod.ExportedFunctions.Keys | Sort-Object) |
-                Should -Be @('Get-LedgerEntry', 'Get-LedgerStatus', 'Get-LedgerVerify', 'Invoke-LedgerForce')
+                Should -Be @('Add-LedgerRecord', 'Get-LedgerEntry', 'Get-LedgerStatus',
+                             'Get-LedgerVerify', 'Invoke-LedgerForce')
         }
 
         It 'exports exactly one alias, bound to Invoke-LedgerForce' {
@@ -401,8 +414,16 @@ Describe 'ledger' -Tag 'ledger' {
             $script:Mod.ExportedAliases['ledger-force'].Definition | Should -BeExactly 'Invoke-LedgerForce'
         }
 
-        It 'does not export the private writer, canonicalizer or error factory' {
-            foreach ($n in 'Add-LedgerRecord', 'ConvertTo-LedgerCanonicalJson', 'New-LedgerError',
+        It 'exports the writer, and still not the canonicalizer or error factory' {
+            # This It read "does not export the private writer, canonicalizer or error factory"
+            # until the writer went public, with Add-LedgerRecord first in the list below. It is
+            # rewritten rather than deleted so the change of surface is legible here and not only
+            # in the log: claude.agent.images hooks/sentinel.ps1 was reaching the writer through
+            # module session state, which is BLOCKER-1, and a public name is the fix. The other
+            # four are unchanged -- widening the surface by one is not widening it by five.
+            $script:Mod.ExportedFunctions.Keys | Should -Contain 'Add-LedgerRecord'
+            $script:Mod.ExportedFunctions['Add-LedgerRecord'].CommandType | Should -Be 'Function'
+            foreach ($n in 'ConvertTo-LedgerCanonicalJson', 'New-LedgerError',
                            'ConvertFrom-LedgerLine', 'Get-LedgerSha256Hex') {
                 $script:Mod.ExportedFunctions.Keys | Should -Not -Contain $n
             }

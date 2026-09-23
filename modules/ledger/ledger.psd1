@@ -6,7 +6,7 @@
     CompanyName       = 'Chaos Engineering'
     Description       = 'Forces Claude to comply. The snake wrapper.'
     PowerShellVersion = '7.4'
-    FunctionsToExport = @('Invoke-LedgerForce', 'Get-LedgerStatus', 'Get-LedgerVerify', 'Get-LedgerEntry')
+    FunctionsToExport = @('Invoke-LedgerForce', 'Get-LedgerStatus', 'Get-LedgerVerify', 'Get-LedgerEntry', 'Add-LedgerRecord')
     CmdletsToExport   = @()
     VariablesToExport = '*'
     AliasesToExport   = @('ledger-force')

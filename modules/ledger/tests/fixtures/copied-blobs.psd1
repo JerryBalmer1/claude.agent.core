@@ -1,5 +1,5 @@
 @{
-    # Git blob shas of every file copied from claude.build.ledger@d57938d, unmodified.
+    # Git blob shas of the files copied from claude.build.ledger@d57938d and still unmodified.
     #
     # The scaffold commit (subject: "scaffold: copy claude.build.ledger@d57938d src+docs+suites,
     # unmodified") measured each of these THREE ways and recorded them in its body: the source
@@ -12,14 +12,22 @@
     #   git -C <substrate>           hash-object -- modules/ledger/<path>
     #   git -C <claude.build.ledger> rev-parse d57938d:<source path>
     #
-    # ledger.psd1 is deliberately absent. It is the ONE file the adapt commit changed, and it has
-    # its own assertion, which reverses the change in memory and shows the source blob coming back:
-    # that proves the diff is the RootModule filename and nothing else.
+    # ledger.psd1 is deliberately absent. It is the ONE file the adapt commit changed, and it HAD
+    # its own assertion, which reversed the change in memory and showed the source blob coming
+    # back: that proved the diff was the RootModule filename and nothing else. F76 deleted that
+    # assertion -- core makes no copy claim about its manifests -- so ManifestSourceSha at the
+    # bottom of this file is now a record of what was measured, not an input to a live check.
+    #
+    # ledger.psm1 is absent for a different reason: its row was RETIRED, not broken. It was pinned
+    # at 37d63403e7f0e21c5a8aa34ac6f80bbacb792d5a until core exported Add-LedgerRecord. Birth
+    # fidelity to the source is recorded at core's birth commit and does not need re-asserting at
+    # every HEAD; re-asserting it forbids core from ever changing its own ledger module. F76 set
+    # the precedent. From that commit core's ledger module diverges from upstream ON PURPOSE, and
+    # no row in this file claims otherwise.
     SourceRepo = 'claude.build.ledger'
     SourceSha  = 'd57938d1eed2b5df13435d7820826e50de30483d'
 
     Files = @(
-        @{ Path = 'ledger.psm1';                      Source = 'src/ledger/Ledger.psm1';           Sha = '37d63403e7f0e21c5a8aa34ac6f80bbacb792d5a' }
         @{ Path = 'python/__init__.py';               Source = 'src/ledger/python/__init__.py';    Sha = '23304ab6c6b309e76fa432a29d551032c9fbc637' }
         @{ Path = 'python/cli.py';                    Source = 'src/ledger/python/cli.py';         Sha = '90dbd91f31b5964fb9e3b808da6239ff7b9553d6' }
         @{ Path = 'python/snake.py';                  Source = 'src/ledger/python/snake.py';       Sha = 'e9a4f06d77b00ca5807b31ed04ab6e5f7fc17ddb' }

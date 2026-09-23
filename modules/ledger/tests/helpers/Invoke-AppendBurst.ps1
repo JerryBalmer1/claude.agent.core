@@ -46,9 +46,11 @@ Import-Module -Name $ManifestPath -Force -ErrorAction Stop
 $mod = Get-Module -Name 'ledger'
 if ($null -eq $mod) { throw "Invoke-AppendBurst: the ledger module did not load from $ManifestPath" }
 
-# Add-LedgerRecord is private, and deliberately so: the append path is reached through
-# Invoke-LedgerForce in normal use. Calling it in the module's own scope is how the suite
-# tests the writer without spawning Python once per record.
+# Add-LedgerRecord was private when this helper was written; it is exported now, for the
+# sentinel in claude.agent.images rather than for this suite. The append path is still reached
+# through Invoke-LedgerForce in normal use, and this still calls the writer in the module's own
+# scope, which is how the suite tests it without spawning Python once per record. Calling it as
+# a public command here would test the export rather than the cross-process lock.
 $append = {
     param([string]$Path, [int]$Attempt, [string]$Sha)
     Add-LedgerRecord -Path $Path -Attempt $Attempt -Validator 'burst' `
