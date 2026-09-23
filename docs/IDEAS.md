@@ -13,6 +13,165 @@ One entry per idea, dated, newest first, under a heading of the form
 `## YYYY-MM-DD — <short title>`, with a few sentences of prose beneath it. No
 checkboxes, no status column, no priority field. This is a notebook, not a tracker.
 
+## 2026-09-23 — The single entry point (important)
+
+Important because it is the first idea in this file that would make coverage provable
+rather than hoped for. The others describe tests. This describes a structure that would
+make one of those tests pass.
+
+### The shape
+
+Every action an agent can take goes through one PowerShell advanced function. Not a
+convention — the only callable surface it has. Parameter sets decide what is expressible,
+validation attributes reject before the body runs, and the wrapper writes the receipt, so
+the record is written by something the caller does not control.
+
+What the runtime emits — bound parameters, call stack, exit code — is mechanical. What the
+agent says it meant to do is self-report, and this file's adversarial catalogue is about
+not trusting self-report. The seam between the two is where expected-versus-actual becomes
+checkable instead of narrated.
+
+### The firewall framing
+
+The accurate analogy is a firewall, and it is accurate in a way that carries obligations.
+A firewall is three things: an enforcement point traffic cannot avoid, a rule table written
+somewhere other than the enforcement point, and a log of everything that hit the boundary
+including what was refused. Default deny, explicit allow.
+
+The obligation is the second part. If the allow list lives in hardcoded parameter sets,
+every policy change is a code change and review, which is how default-deny systems rot into
+permanent broad allows. The rule table wants to be config — same shape as config\repo.json —
+with the function signature generated from it. If parameter sets can be generated the way
+POLICY.md already is, then generated-match-config already covers policy drift and no new
+mechanism is needed. Whether PowerShell metaprogramming supports that cleanly is unknown
+and is the first thing to test.
+
+The third part matters too and is easy to forget: refusals must be recorded as loudly as
+permissions. A firewall that logs only accepted traffic is useless for forensics. A refused
+call is the highest-value receipt in the system.
+
+### The invocation as a time window
+
+The wrapper does not only gate the call. It defines a window: from invocation to return,
+the wrapper knows what is supposed to be happening. Anything the agent does inside that
+window which did not arrive through the wrapper is anomalous by definition.
+
+This is a materially easier problem than intent detection. Nothing has to decide whether an
+action was reasonable, or infer what the agent was trying to do. The question is only
+whether an observed action falls inside the declared window and arrived through the declared
+surface. Two facts, both mechanical, neither self-reported. Expected is a structure, not a
+guess.
+
+It also turns coverage into something observable in real time rather than reconstructed
+afterwards. A missing receipt is a gap discovered later; an action inside an open window
+that has no matching wrapper entry is a live disagreement between two records, and the
+disagreement is the finding.
+
+### The escape hatch, recorded rather than denied
+
+There will be cases the wrapper cannot express — a parameter it cannot resolve, a task
+outside every declared set. Pretending otherwise produces a system people route around.
+
+Handle it explicitly. The wrapper records a handoff: the call ended here, the agent
+continued on its own from this point, for this stated reason, with this parameter it could
+not resolve. Responsibility transfers at a named boundary, and the record says where that
+boundary was.
+
+That is strictly better than silence in both directions. Off-wrapper work is visible instead
+of invisible, so the auditable claim becomes "here is everything that happened and here is
+where the guarantee stops," which is a claim that survives contact with an auditor.
+Frequency of handoffs also becomes a measurement — if the hatch is used constantly, the
+parameter sets are wrong, and that is a signal worth having rather than a failure to hide.
+The hatch must not be a general-purpose bypass with a free-text reason; it needs its own
+declared cases, or it becomes the allow-all rule at the bottom of the table.
+
+### The reachable-surface programme
+
+If the chokepoint holds, the work that follows is enumeration. Every place the agent can
+reach the world becomes either a wrapped surface or an explicitly accepted risk, recorded
+as such. At minimum: file system reads and writes, process spawn, network egress,
+environment variables and secrets, the ledger itself, and the git surface.
+
+This is deliberately unglamorous and is the part that produces a defensible claim. A
+project that says "the agent cannot do anything we did not wrap, and here is the list of
+what we wrapped" has a scope an auditor can read. A project that says "the agent is
+constrained" does not.
+
+The list also has a second use. Each unwrapped surface is a candidate finding in the
+adversarial catalogue, so the enumeration doubles as a test plan.
+
+### Why it inverts the problem
+
+Enumerating forbidden actions requires predicting the attack. Enumerating reachable actions
+does not. Everything outside the parameter sets is denied by construction, and anything
+observed outside the wrapper is a finding by definition rather than a judgement call.
+
+### What makes it real rather than a convention
+
+A chokepoint that can be walked around is a suggestion. The enforcement is the image, not
+the function: constrained language mode, no direct executable access, no network at
+execution time, and the sentinel catching any call that did not arrive through the wrapper.
+
+This is the coverage problem recorded in "What we do not have yet" — proving the gate was
+in the path. It is the first design here that could answer it, because a bypassing call
+leaves the wrapper's receipt missing and the sentinel's receipt present, which is a
+detectable disagreement rather than a silent gap.
+
+### SWOT
+
+Strengths. The enforcement point is a language feature, not a framework — parameter sets,
+validation attributes and ConstrainedLanguage are PowerShell behaviour, not something to
+build and defend. Refusals and handoffs become first-class evidence. It makes an existing
+unmet claim testable instead of adding a new claim. And it is demonstrable in a short video,
+which matters more than it sounds.
+
+Weaknesses. Coverage is asserted at the boundary, not proven within it — a wrapper that
+shells out re-opens everything it closed. It constrains the agent's usefulness in exact
+proportion to its safety, and that trade has no obvious dial. The rule table becomes a new
+single point of failure with no independent verification of its own correctness. Generating
+parameter sets from config may not be clean in PowerShell, and if it is not, the firewall
+framing collapses into hardcoded allow lists, which is the rot case above. The window
+mechanism needs something watching that the agent does not control, and what that observer
+is has not been designed.
+
+Opportunities. It generalises past PowerShell — the same structure is an MCP server
+boundary, a tool-call gateway, or a syscall filter, and the argument is transferable even
+if this implementation is not. Refusal and handoff receipts are a dataset nobody else has
+and are directly publishable. It is also the natural place to measure gate overhead, which
+is the uncontested open question about cost of proof.
+
+Threats. Platform vendors are moving toward tool-permission systems of their own, and a
+first-party one wins on distribution regardless of quality. Agent frameworks may standardise
+a boundary that makes this redundant. And the honest one: if the wrapper is bypassable in
+any realistic configuration, the whole thing is theatre, and that is a single finding away
+from being proven either way.
+
+### Assessment
+
+Good idea, with one condition attached. The chokepoint structure is sound and worth
+building. The firewall framing is sound and worth adopting. The time window is the
+strongest part and the cheapest to prototype. The config-generated parameter sets are
+speculative and should be tested before anything is designed around them.
+
+What should be shelved: any ambition to make this unbypassable against a hostile agent
+inside its own container. That is a research problem with a large literature and no clean
+answer, and pursuing it would consume the project. The defensible claim is narrower and
+still useful — the wrapper is unbypassable against an agent that is not actively attacking
+the runtime, and bypass attempts are detectable after the fact. Say that, prove that, and
+do not overclaim.
+
+### Open questions, none answered
+
+- Whether PowerShell parameter sets can be generated from config cleanly enough for
+  generated-match-config to cover them.
+- What observes the invocation window, and whether it can run outside the agent's reach.
+- What the wrapper costs per call, and whether that cost is low enough that nobody switches
+  it off.
+- Whether the sentinel can observe calls that did not arrive through the wrapper, or only
+  infer them from missing receipts.
+- Whether refusal receipts leak information an attacker could use to map the allow list.
+- Which reachable surfaces are wrapped, which are accepted risks, and who decides.
+
 ## 2026-09-23 — Receipt on bind
 
 A PowerShell attribute, [Receipted()], that writes a receipt at parameter-binding time
