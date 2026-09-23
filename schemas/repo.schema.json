@@ -176,7 +176,17 @@
             "required": [ "heading", "prompt" ],
             "properties": {
               "heading": { "type": "string", "minLength": 1 },
-              "prompt":  { "type": "string", "minLength": 1 }
+              "prompt":  { "type": "string", "minLength": 1 },
+              "collapsible": {
+                "type": "boolean",
+                "default": false,
+                "description": "Render the section as <details> with the heading in a <summary> instead of as a `## heading`. Absent means false. A JSON Schema default is an annotation and not a rule -- nothing fills the property in, so Generate-Policy.ps1 applies the default itself."
+              },
+              "open": {
+                "type": "boolean",
+                "default": false,
+                "description": "Only meaningful with collapsible: emit <details open> so the section starts expanded. Absent means false, which is collapsed."
+              }
             }
           }
         }

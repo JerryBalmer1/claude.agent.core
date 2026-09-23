@@ -54,6 +54,25 @@ function ConvertTo-LfBytes {
     return (Get-Utf8NoBom).GetBytes($text)
 }
 
+function Get-SectionFlag {
+    <#
+        StrictMode-safe read of an optional boolean on a pull_request.sections entry.
+
+        `collapsible` and `open` are optional in schemas/repo.schema.json, and a JSON Schema
+        `default` is an annotation, not a rule -- nothing writes the property into the parsed
+        object. Under Set-StrictMode -Version 3.0 a bare $Section.collapsible on a section that
+        omits it is a terminating error, so the default is applied here, in one place, rather
+        than by every caller remembering to guard.
+    #>
+    param(
+        [Parameter(Mandatory)] $Section,
+        [Parameter(Mandatory)] [string]$Name
+    )
+    $prop = $Section.PSObject.Properties[$Name]
+    if ($null -eq $prop -or $null -eq $prop.Value) { return $false }
+    return [bool]$prop.Value
+}
+
 function Get-RepoConfig {
     if (-not (Test-Path -LiteralPath $ConfigPath)) { throw "config not found: $ConfigPath" }
     $json = [System.IO.File]::ReadAllText($ConfigPath)
@@ -208,11 +227,27 @@ function New-PullRequestTemplate {
     & $add '  CI check "generated-match-config" fails the build if this file and the config disagree.'
     & $add '-->'
     & $add ''
+    # A collapsible section is <details> rather than `## heading`, because the sections this
+    # template asks for are not the same size: How is one block per commit and grows with the
+    # branch, Verify is a wall of pasted output. Both are worth having and neither is worth
+    # scrolling past, so the shape is a config flag and not a house style argued per PR.
     foreach ($s in $Config.pull_request.sections) {
-        & $add ('## {0}' -f $s.heading)
-        & $add ''
-        & $add ('<!-- {0} -->' -f $s.prompt)
-        & $add ''
+        if (Get-SectionFlag -Section $s -Name 'collapsible') {
+            $openAttr = if (Get-SectionFlag -Section $s -Name 'open') { ' open' } else { '' }
+            & $add ('<details{0}>' -f $openAttr)
+            & $add ('<summary><strong>{0}</strong></summary>' -f $s.heading)
+            & $add ''
+            & $add ('<!-- {0} -->' -f $s.prompt)
+            & $add ''
+            & $add '</details>'
+            & $add ''
+        }
+        else {
+            & $add ('## {0}' -f $s.heading)
+            & $add ''
+            & $add ('<!-- {0} -->' -f $s.prompt)
+            & $add ''
+        }
     }
     & $add '## Base branch'
     & $add ''
