@@ -464,11 +464,12 @@ the file. Same family as F84 and F85: the incomplete answer and the complete one
 shape on the page. What would have caught it is asking *"what else does this file claim?"* once per
 file rather than once per finding.
 
-## F87 — `pr-body-links` has rejected its own author's draft three times, and the pattern is the finding
+## F87 — `pr-body-links` has rejected its own author's draft four times, and the fourth was the body that records the first three
 
 Measured 2026-09-23. `scripts/ci/Test-PrBodyLinks.ps1` has refused a pull request body written by
-the agent that wrote the check, on **PR #13**, **PR #16** and **PR #20**. One would be a typo.
-Three is the check earning its place.
+the agent that wrote the check, on **PR #13**, **PR #16**, **PR #20** — and then on the draft body
+of the pull request that carries this row. One would be a typo. Four is the check earning its
+place.
 
 What eventually landed is clean. Run against the three stored bodies at develop `fbb3272`:
 
@@ -488,6 +489,18 @@ to name, `tests/Repo.Tests.ps1` and `config/contracts.json`, **do not exist** �
 seed items `docs/PRE-PUBLIC.md` records as not found — so no permalink can be built for either, and
 the only legal home for a path that cannot be pinned is a fenced block. A check that forces a
 non-existent path into a fence is drawing the right line: an unpinnable citation is not a citation.
+
+**The fourth, recorded because it happened while this row was being written.** The draft body of
+the pull request that introduces F86, F87 and F88 failed with
+`FAIL -- 5 violation(s) in 30 path token(s)`. All five violations were the **same token**,
+`AGENTS.md`, in five places where it had been written as part of a sentence rather than as link
+text — including a heading quoting a commit subject, *"docs: AGENTS.md names the repository it
+governs"*, where the path is a word in the sentence being quoted. The corrected body passed at
+`27 path token(s) checked`.
+
+So the failure mode is not ignorance of the rule. It is that a path reads as prose to the author
+and as a citation to the check, and the author cannot see the difference in their own sentence.
+That is the case the rule exists for, and four for four is the argument for keeping it.
 
 **A second defect, found while measuring the above.** The script's own worked example at
 `scripts/ci/Test-PrBodyLinks.ps1:61` is wrong:
