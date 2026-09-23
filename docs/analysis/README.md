@@ -1,6 +1,8 @@
 # ANALYSIS — manifest
 
-Four files, written as one set on 2026-09-22. They are analysis rather than record: nothing here
+Five files. Four were written as one set on 2026-09-22; the fifth,
+[`suppressed-outputs.md`](suppressed-outputs.md), was added on 2026-09-23 and carries a correction
+to one of the four. They are analysis rather than record: nothing here
 is a measurement of this repository, nothing here is enforced by anything, and nothing here is a
 commitment. Measurements are findings and live in [`../FINDINGS.md`](../FINDINGS.md); rules with
 teeth live in [`../DECISIONS.md`](../DECISIONS.md); unscheduled ideas live in
@@ -11,7 +13,8 @@ authority.
 sentence that makes the claim rather than in a footnote or a bibliography. And every sentence
 that is our own reasoning rather than a cited claim is marked `[analysis]`, so a reader can tell
 the two apart without checking. Forensic receipt **seq 13**, subject
-`analysis-set-landscape-gaps-refusal`, records the set.
+`analysis-set-landscape-gaps-refusal`, records the first four; **seq 15**, subject
+`suppressed-outputs-and-cost-correction`, records the fifth and the correction it makes.
 
 ---
 
@@ -71,6 +74,27 @@ answers: **what has to be true of a running process for the record in `refusal.m
 failure it describes?** It cites nothing external and is `[analysis]` throughout. It does not
 specify an implementation, name a module, or propose a change to any existing loop.
 
+## [`suppressed-outputs.md`](suppressed-outputs.md) — the numbers a higher score makes worse
+
+Holds the four-stage decomposition that gives the rest of the file somewhere to sit — the task
+split from the authority it runs under, the tool call as the unit of observation once steps stop
+being declared in advance, and effects separated from the evidence produced about them — then the
+three outputs that are systematically not collected and the structural reason each one is bad for
+whoever would have to publish it, nine further absences each stated with what you would count, the
+dependency argument that puts the provenance layer ahead of every diagnostic downstream of it, and
+a twelve-row weight table whose last column says which rows this repository has actually measured.
+It answers: **which outputs does nobody collect, and what would counting them look like?** Its
+weights are a proposal with a stated rationale and are not a finding; it takes no position on
+whether any of the twelve is worth what it would cost to collect, and it does not propose a record
+shape — that is **B18**'s, and **D003** still freezes the eight keys.
+
+**It is last in this list because it reads after the other four.**
+[`refusal.md`](refusal.md) argues one of its twelve outputs at length and is not restated here,
+[`failure-envelope.md`](failure-envelope.md) supplies the retry-ladder mechanics it counts, and its
+sixth section **corrects** [`gaps.md`](gaps.md): gate latency is published, and the cost of a
+gate's *evidence* is the part that is not. A reader who takes this file before `gaps.md` will meet
+the correction before the claim it corrects.
+
 ---
 
 ## Terms used here that are not in the ontology
@@ -80,9 +104,10 @@ its senses — **gate** (the enforcement sense unless a sentence says otherwise)
 **provenance**, **judgment**, **control**, **handoff**, **anchor**, **chain**, **receipt**,
 **guard**, **finding**.
 
-Several load-bearing phrases in these four files are **not** VOCABULARY terms and are not
+Several load-bearing phrases in these five files are **not** VOCABULARY terms and are not
 proposed as additions: *ablation ladder*, *failure envelope*, *refusal*, *rephrase count*,
-*lineage*, *bypass mode* and *cost of proof*. They are used as prose. Recorded here rather than
-left to be noticed, because a phrase that recurs in four files starts to read like a defined term
+*lineage*, *bypass mode*, *cost of proof*, *near-miss* and *instruction decay*. They are used as
+prose. Recorded here rather than left to be noticed, because a phrase that recurs across five
+files starts to read like a defined term
 whether or not anyone defined it, and importing a guarantee this repository does not make is the
 exact failure `docs/VOCABULARY.md` opens by warning about.
