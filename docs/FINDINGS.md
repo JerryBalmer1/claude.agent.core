@@ -346,3 +346,97 @@ Reproduce:
 ```powershell
 gh repo list JerryBalmer1 --limit 100 --json name --jq '.[] | select(.name | startswith("claude.agent.")) | .name'
 ```
+
+## F83 — `pwsh -File` does not bind piped input, and `pwsh -Command` does not propagate an exit code
+
+Two separate defects in how a `.ps1` is invoked from outside a PowerShell session. Both were
+disclosed in the pull request that added `scripts/Invoke-Preflight.ps1` and are recorded here
+because they are facts about the **runtime**, not about that one script, and the next script with
+a pipeline parameter or a meaningful exit code will meet them again.
+
+**`-File` hands the child a raw stdin stream, not a PowerShell pipeline.** Nothing binds, and a
+mandatory pipeline parameter fails as though it had been omitted:
+
+```powershell
+# scratch.ps1: param([Parameter(Mandatory, ValueFromPipeline)][string[]]$Path) ... exit 2
+'x','y' | pwsh -NoProfile -NonInteractive -File scratch.ps1
+# scratch.ps1: Cannot process command because of one or more missing mandatory parameters: Path.
+# $LASTEXITCODE = 1   <- pwsh's own failure code, not the script's 2
+```
+
+**`-Command` reports the success of the command line, not the nested script's exit code.** The
+same script, invoked three ways:
+
+| Invocation | Binds? | `$LASTEXITCODE` |
+|---|---|---|
+| `'x','y' \| pwsh -NoProfile -File scratch.ps1` | no | 1 |
+| `pwsh -NoProfile -Command "'x','y' \| & ./scratch.ps1"` | yes | **1** |
+| `pwsh -NoProfile -Command "'x','y' \| & ./scratch.ps1; exit $LASTEXITCODE"` | yes | **2** |
+
+**Why this is a finding and not a footnote.** `Invoke-Preflight.ps1`'s entire contract is its exit
+code, and it spends three of them: 0 clear, 1 overlap found, **2 could not see**. The `-Command`
+form silently rewrites 2 into 1, which turns *"I could not see"* into *"I found an overlap"* — the
+two answers the three-code design exists to keep apart. The same flattening applied to a script
+that used only 0 and 1 would be invisible.
+
+The guidance that follows is written into the script's own help at
+`scripts/Invoke-Preflight.ps1:56-69`: pipe in-process, or use `-Command` and end it with
+`; exit $LASTEXITCODE`.
+
+## F84 — `Measure-Object -Line` does not count blank lines
+
+`(Get-Content <file> | Measure-Object -Line).Lines` counts **non-empty** lines. Forensic record
+seq 9 stated `docs/IDEAS.md` had gone 183 -> 306 lines; the physical counts are **232 -> 391**, and
+`git diff --numstat` for `6c8c8bd742c78c80ba8779b219cb0197721c84c7` reports **159 insertions**. The
+line numbers quoted in that record are physical and are correct; only the totals were wrong.
+Recorded at the time as forensic seq 10, subject `measure-object-line-undercount`, kind
+**confession**.
+
+Reproduce, on a file of six lines of which three are blank:
+
+```powershell
+$p = Join-Path $env:TEMP 'blank.txt'
+[System.IO.File]::WriteAllText($p, "a`n`nb`n`n`nc`n")
+(Get-Content $p | Measure-Object -Line).Lines   # 3
+(Get-Content $p).Count                          # 6
+```
+
+**The general shape.** A count that silently drops a category reads exactly like a smaller file. It
+is the same failure as a test that cannot fail reading exactly like a test that passes
+(`docs/IDEAS.md`, *a test count that does not move is a signal*) — the wrong number arrives with no
+error attached to it. Use `(Get-Content $p).Count` where the count is evidence.
+
+## F85 — the check that stops README.md rotting threw instead of reporting, and took seven lines with it
+
+Measured 2026-09-23 while re-measuring the README's counts. With the per-module table stale at
+`repo=49 total=161` and the live run at `repo=94 total=206`, check 6 of
+`docs/plans/2026-09-22-substrate-cutover/verify.ps1` did not print `FAIL`. It **threw**, and the
+script died after twelve of its nineteen `PASS`/`FAIL` lines:
+
+```text
+PASS  every tracked .py is under runtimes.python.allowed_under   4 tracked .py, allowed under modules/ledger/python/
+verify.ps1: Error formatting a string: Index (zero based) must be greater than or equal to zero and less than the size of the argument list..
+```
+
+**The mechanism.** At `docs/plans/2026-09-22-substrate-cutover/verify.ps1:217` the mismatch line is
+built as `$mismatch.Add("{0}: README {1}, measured {2}" -f $name, $stated[$name], $byName[$name])`.
+Inside a method call the commas separate **arguments**, so `-f` binds one operand and the format
+string is asked for `{1}` and `{2}` that were never passed. Parenthesising the expression fixes it:
+
+```powershell
+$l = [System.Collections.Generic.List[string]]::new()
+$l.Add('{0}: a {1}, b {2}' -f 'x', 1, 2)     # THREW: Error formatting a string: Index (zero based)...
+$l.Add(('{0}: a {1}, b {2}' -f 'x', 1, 2))   # count=1  value=x: a 1, b 2
+```
+
+**Why it matters more than an ordinary bug.** This line is only ever reached when the check has
+something to report. On a green tree it is dead code, so the defect is invisible for exactly as
+long as the check is unnecessary and appears the moment it is needed. The mismatch it existed to
+print — `repo: README 49, measured 94` — is the one thing it did not say, and checks 7 and 8 never
+ran at all.
+
+**Not repaired.** `verify.ps1` is archived evidence of a release and is not rewritten to match a
+later tree (F74, `AGENTS.md:95-99`). With the README corrected it reports `19 check(s), 15 passed,
+4 failed`, the same four by-design reds it has always reported, and the defect goes back to being
+unreachable. `docs/PRE-PUBLIC.md` records that a live equivalent of this script, if one is wanted,
+is a new script rather than an edit to this one.

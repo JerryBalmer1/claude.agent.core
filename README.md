@@ -42,17 +42,19 @@ rather than here.
 none of the history: the initial commit is the one commit in this repository's life that is not a
 merge, and `docs/FINDINGS.md` F74 names every path that was not carried and why.
 
-The suite is **161 tests, 0 failed**, and was **162** at birth. The source measured 188: 27 were
-removed and 1 was added.
+The suite is **206 tests, 0 failed**. It was **162** at birth, so **44 net have been added since**.
+The source measured 188: 27 were removed and 1 was added on the way in.
 The 27 are not a regression — every one of them asserted a fact about the source repository's own
 git history, pinned commit shas as fixtures, a trailerless root commit, a grandfather exemption
 file, none of which a clean copy has. F78 names all 27, and BACKLOG B11 rebuilds the ones worth
 rebuilding against synthetic repositories the test itself constructs. The 1 that was added pins a
 file mode in the index, because the copy carried bytes and not modes and only Linux CI could see
-it (F79). The one test that has gone since birth is the `ledger.psm1` blob row in
+it (F79). The one retirement recorded since birth is the `ledger.psm1` blob row in
 `modules/ledger/tests/fixtures/copied-blobs.psd1`, retired when core exported `Add-LedgerRecord`:
 birth fidelity to `claude.build.ledger` is recorded at the birth commit, and re-asserting it at
-every HEAD would forbid core from ever changing its own ledger module.
+every HEAD would forbid core from ever changing its own ledger module. At 161 that retirement was
+visible in the total; at 206 it is not, which is why it is written down in `docs/DECISIONS.md`
+**D002** rather than left to arithmetic.
 
 `docs/plans/2026-09-22-substrate-cutover/verify.ps1` re-derives this release's claims and reports
 **15 of 19**. Four reds, all by design. Two are F70: `modules/plans/plans.psd1` and
@@ -70,15 +72,19 @@ about the branch name and not about the tree (F76, BACKLOG B9).
 | `ledger` | `modules/ledger/ledger.psd1` | `modules/ledger/tests/` | **90** |
 | `policy` | `modules/policy/policy.psd1` | `modules/policy/tests/` | **10** |
 | `plans` | `modules/plans/plans.psd1` | `modules/plans/tests/` | **12** |
-| — | the repository's own suite | `tests/` | **49** |
-| | | **total** | **161** |
+| — | the repository's own suite | `tests/` | **94** |
+| | | **total** | **206** |
 
 Every figure in that table is measured, not counted by hand. It comes out of
 [`scripts/Measure-Modules.ps1`](scripts/Measure-Modules.ps1), and
 [`verify.ps1`](docs/plans/2026-09-22-substrate-cutover/verify.ps1) parses the table back out of
 this file and compares it to a live run, so the README cannot rot quietly — except that
-`verify.ps1` is not yet a required check, so nothing in CI runs it and the figures above had
-already rotted once before this commit.
+`verify.ps1` is not yet a required check, so nothing in CI runs it and the figures above have now
+rotted twice. The second time it did not rot quietly so much as loudly and uselessly: with the
+table stale, that check threw on a malformed format string instead of reporting the mismatch, and
+took the remaining seven PASS/FAIL lines with it — its own, and both of checks 7 and 8. Twelve
+lines printed, seven never did, and the mismatch it existed to report —
+`repo: README 49, measured 94` — was the one thing it did not say.
 
 ## Why there is Python here
 
