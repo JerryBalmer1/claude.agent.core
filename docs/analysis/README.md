@@ -1,11 +1,12 @@
 # ANALYSIS — manifest
 
-Five files. Four were written as one set on 2026-09-22; the fifth,
+Six files. Four were written as one set on 2026-09-22; the fifth,
 [`suppressed-outputs.md`](suppressed-outputs.md), was added on 2026-09-23 and carries a correction
-to one of the four. They are analysis rather than record: nothing here
-is a measurement of this repository, nothing here is enforced by anything, and nothing here is a
-commitment. Measurements are findings and live in [`../FINDINGS.md`](../FINDINGS.md); rules with
-teeth live in [`../DECISIONS.md`](../DECISIONS.md); unscheduled ideas live in
+to one of the four; the sixth, [`instrumentation.md`](instrumentation.md), was added the same day
+and narrows two claims rather than correcting one. They are analysis rather than record: nothing
+here is a measurement of this repository, nothing here is enforced by anything, and nothing here
+is a commitment. Measurements are findings and live in [`../FINDINGS.md`](../FINDINGS.md); rules
+with teeth live in [`../DECISIONS.md`](../DECISIONS.md); unscheduled ideas live in
 [`../IDEAS.md`](../IDEAS.md). This directory sits beside all three and claims none of their
 authority.
 
@@ -14,7 +15,9 @@ sentence that makes the claim rather than in a footnote or a bibliography. And e
 that is our own reasoning rather than a cited claim is marked `[analysis]`, so a reader can tell
 the two apart without checking. Forensic receipt **seq 13**, subject
 `analysis-set-landscape-gaps-refusal`, records the first four; **seq 15**, subject
-`suppressed-outputs-and-cost-correction`, records the fifth and the correction it makes.
+`suppressed-outputs-and-cost-correction`, records the fifth and the correction it makes; **seq
+17**, subject `instrumentation-and-the-limits-of-self-report`, records the sixth and the two
+claims it narrows.
 
 ---
 
@@ -88,12 +91,37 @@ weights are a proposal with a stated rationale and are not a finding; it takes n
 whether any of the twelve is worth what it would cost to collect, and it does not propose a record
 shape — that is **B18**'s, and **D003** still freezes the eight keys.
 
-**It is last in this list because it reads after the other four.**
+**It sits below the other four because it reads after them.**
 [`refusal.md`](refusal.md) argues one of its twelve outputs at length and is not restated here,
 [`failure-envelope.md`](failure-envelope.md) supplies the retry-ladder mechanics it counts, and its
 sixth section **corrects** [`gaps.md`](gaps.md): gate latency is published, and the cost of a
 gate's *evidence* is the part that is not. A reader who takes this file before `gaps.md` will meet
 the correction before the claim it corrects.
+
+## [`instrumentation.md`](instrumentation.md) — and the limits of self-report
+
+Holds the split that **B22** in [`../BACKLOG.md`](../BACKLOG.md) would have to encode: what this
+repository can count without the agent's cooperation — wall clock, file and diff counts, check
+durations, chain length, and the gated call count that does not exist yet — set
+against what exists only in the agent's session and cannot be read from this tree at all, which is
+tokens and context occupancy. Then four consequences: both classes belong in one record, because
+disagreement between them is the only thing either can be checked against; an absent record is the
+failure mode rather than a wrong one, so a missing record has to fail; deterrence is not available
+as a mechanism, because the agent is cleared between runs and carries no consequence forward,
+which leaves the operator as the only audience such a check has; and a `finally` block may update
+an envelope but must never be its only writer. It answers: **which of a run's numbers are evidence
+of a fact, and which are evidence of a claim?** It proposes no key and no schema — **D003** still
+freezes the eight — and it takes no position on whether any field is worth what it would cost to
+collect, which is [`suppressed-outputs.md`](suppressed-outputs.md)'s question and stays there.
+
+**It is last because it reads after all five, and it corrects none of them.**
+[`refusal.md`](refusal.md) supplies the selection argument its fifth section narrows,
+[`failure-envelope.md`](failure-envelope.md) supplies the runtime rule its sixth restates, and
+[`suppressed-outputs.md`](suppressed-outputs.md) supplies the table whose token-bearing rows it
+reclassifies. What it does instead is **narrow two claims that are true as far as they go**: that
+a run's cost can be counted — narrowed to the half core can observe, with the other half labelled
+a claim — and that a bypass shows up as a disagreement between two records — narrowed to the case
+where a missing record fails, since otherwise it shows up as nothing at all.
 
 ---
 
@@ -104,10 +132,10 @@ its senses — **gate** (the enforcement sense unless a sentence says otherwise)
 **provenance**, **judgment**, **control**, **handoff**, **anchor**, **chain**, **receipt**,
 **guard**, **finding**.
 
-Several load-bearing phrases in these five files are **not** VOCABULARY terms and are not
+Several load-bearing phrases in these files are **not** VOCABULARY terms and are not
 proposed as additions: *ablation ladder*, *failure envelope*, *refusal*, *rephrase count*,
 *lineage*, *bypass mode*, *cost of proof*, *near-miss* and *instruction decay*. They are used as
-prose. Recorded here rather than left to be noticed, because a phrase that recurs across five
+prose. Recorded here rather than left to be noticed, because a phrase that recurs across several
 files starts to read like a defined term
 whether or not anyone defined it, and importing a guarantee this repository does not make is the
 exact failure `docs/VOCABULARY.md` opens by warning about.
