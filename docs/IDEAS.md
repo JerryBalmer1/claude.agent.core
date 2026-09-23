@@ -243,6 +243,37 @@ Therefore changes land as dated proposals and are never applied backwards. A def
 was wrong gets a new label with a later effective date, and the earlier one stays readable for
 the decisions taken under it.
 
+## 2026-09-23 — Vocabulary as a measured feedback loop
+
+The two entries above describe a structure. This one describes what keeps it honest.
+
+**The quality of the structuring done downstream is bounded by the vocabulary available at
+the entry point.** A distinction that has no name at intake cannot be carried through to
+anything that happens afterwards, and the loss is not recoverable later by working harder on
+the far side. That bound is paid on every call rather than once at design time, which is what
+connects it to the cost-of-proof entry below — the same per-call arithmetic, measured against
+a different property. It is not re-derived here.
+
+The shape that follows is a loop: **the system maintains a model of its own vocabulary and
+revises it from measured outcomes.** A label that never resolves anything, a node no view
+projects, a distinction that turns out to make no difference to what gets structured — each
+is an observation, and each feeds a revision. Nothing about this requires a claim beyond the
+mechanical one. It is a feedback loop whose inputs are measurements and whose revisions leave
+receipts, and the receipts are what separate it from a preference expressed repeatedly.
+
+The comparison that suggests itself is perceptual — a richer set of distinctions available at
+intake changes what can be resolved downstream — and **the comparison has a limit which is
+the point rather than a caveat.** Continuous, silent reweighting is not available here. Every
+revision has to be dated and receipted, or the meaning of prior decisions becomes unreadable,
+which is exactly the failure the entry above is about. A loop that quietly retunes itself
+between two decisions leaves no way to say which version of itself made the first one.
+
+That constraint is the price of auditability and it is accepted deliberately. It costs
+responsiveness: the loop can only move at the speed at which somebody accepts a dated
+proposal, which is slower than the evidence arrives. The alternative is a vocabulary that is
+always current and never accountable, and this repository has already chosen the other side
+of that trade everywhere else it comes up.
+
 ## 2026-09-23 — Receipt on bind
 
 A PowerShell attribute, [Receipted()], that writes a receipt at parameter-binding time
