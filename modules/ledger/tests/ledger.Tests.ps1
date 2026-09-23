@@ -112,9 +112,11 @@ Describe 'ledger' -Tag 'ledger' {
         }
 
         function Add-Receipt {
-            # Add-LedgerRecord is private. It is reached in the module's own scope rather
-            # than exported for a test, because widening the public surface to make it
-            # testable would change the surface this suite exists to pin.
+            # Add-LedgerRecord was private when this helper was written, and it is called in
+            # the module's own scope for that reason. It is exported now -- for the sentinel,
+            # not for this suite -- and the module-scope call is left alone deliberately: the
+            # fixture chains below were built through this path and changing how they are
+            # written would change what the read-back Contexts are measuring.
             param(
                 [Parameter(Mandatory)][string]$Path,
                 [Parameter(Mandatory)][int]$Attempt,
@@ -393,7 +395,7 @@ Describe 'ledger' -Tag 'ledger' {
 
     # ================================================================== module surface
 
-    Context 'the module surface is what the source module exported' {
+    Context "the module surface -- the source module's four, plus the writer core exported" {
 
         It 'imports from the manifest under the bare name ledger' {
             $script:Mod | Should -Not -BeNullOrEmpty
@@ -401,9 +403,10 @@ Describe 'ledger' -Tag 'ledger' {
             $script:Mod.Version.ToString() | Should -BeExactly '0.2.0'
         }
 
-        It 'exports exactly the four functions the source module exported' {
+        It "exports exactly five functions: the source module's four, plus Add-LedgerRecord" {
             @($script:Mod.ExportedFunctions.Keys | Sort-Object) |
-                Should -Be @('Get-LedgerEntry', 'Get-LedgerStatus', 'Get-LedgerVerify', 'Invoke-LedgerForce')
+                Should -Be @('Add-LedgerRecord', 'Get-LedgerEntry', 'Get-LedgerStatus',
+                             'Get-LedgerVerify', 'Invoke-LedgerForce')
         }
 
         It 'exports exactly one alias, bound to Invoke-LedgerForce' {
@@ -411,8 +414,16 @@ Describe 'ledger' -Tag 'ledger' {
             $script:Mod.ExportedAliases['ledger-force'].Definition | Should -BeExactly 'Invoke-LedgerForce'
         }
 
-        It 'does not export the private writer, canonicalizer or error factory' {
-            foreach ($n in 'Add-LedgerRecord', 'ConvertTo-LedgerCanonicalJson', 'New-LedgerError',
+        It 'exports the writer, and still not the canonicalizer or error factory' {
+            # This It read "does not export the private writer, canonicalizer or error factory"
+            # until the writer went public, with Add-LedgerRecord first in the list below. It is
+            # rewritten rather than deleted so the change of surface is legible here and not only
+            # in the log: claude.agent.images hooks/sentinel.ps1 was reaching the writer through
+            # module session state, which is BLOCKER-1, and a public name is the fix. The other
+            # four are unchanged -- widening the surface by one is not widening it by five.
+            $script:Mod.ExportedFunctions.Keys | Should -Contain 'Add-LedgerRecord'
+            $script:Mod.ExportedFunctions['Add-LedgerRecord'].CommandType | Should -Be 'Function'
+            foreach ($n in 'ConvertTo-LedgerCanonicalJson', 'New-LedgerError',
                            'ConvertFrom-LedgerLine', 'Get-LedgerSha256Hex') {
                 $script:Mod.ExportedFunctions.Keys | Should -Not -Contain $n
             }
