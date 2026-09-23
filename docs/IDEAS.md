@@ -40,7 +40,7 @@ including what was refused. Default deny, explicit allow.
 
 The obligation is the second part. If the allow list lives in hardcoded parameter sets,
 every policy change is a code change and review, which is how default-deny systems rot into
-permanent broad allows. The rule table wants to be config — same shape as config\repo.json —
+permanent broad allows. The rule table wants to be config — same shape as config/repo.json —
 with the function signature generated from it. If parameter sets can be generated the way
 POLICY.md already is, then generated-match-config already covers policy drift and no new
 mechanism is needed. Whether PowerShell metaprogramming supports that cleanly is unknown
