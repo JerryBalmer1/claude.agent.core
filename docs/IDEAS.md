@@ -13,6 +13,52 @@ One entry per idea, dated, newest first, under a heading of the form
 `## YYYY-MM-DD — <short title>`, with a few sentences of prose beneath it. No
 checkboxes, no status column, no priority field. This is a notebook, not a tracker.
 
+## 2026-09-23 — Receipt on bind
+
+A PowerShell attribute, [Receipted()], that writes a receipt at parameter-binding time
+rather than inside the function body. The appeal is that binding happens before any body
+code runs, so the receipt cannot be skipped by a body that returns early or throws.
+
+The caveat that has stopped this twice: attribute classes require `using module`, which
+changes the import contract for every consumer and cannot be conditionally applied. That
+cost has not been weighed against the benefit, and should be before any work starts.
+
+Related to the single entry point entry above — if the wrapper exists, binding-time
+receipts are its natural implementation rather than a separate feature.
+
+## 2026-09-23 — A test count that does not move is a signal
+
+Twice now a defect was caught not by a failing test but by a passing total that did not
+change. In the PR-template work, and again in the header work, a Pester -ForEach list
+placed in BeforeAll expanded to nothing during discovery, producing zero cases that
+reported as success. The suite total staying at 176 is what exposed it.
+
+The generalisation: a test that cannot fail reports identically to a test that passes.
+Case count is the only observable that distinguishes them, and nothing currently asserts
+on it.
+
+Possible shapes, none chosen: assert an expected minimum case count per file; fail the
+run if any Describe block produced zero cases; record the count in the receipt so a drop
+between commits is visible in the chain rather than only in a human reading the log.
+
+This is the same failure mode as the gap entries in the adversarial catalogue — absence
+that looks like success — but it is about our own suite rather than about receipts, which
+makes it the cheapest instance of the problem to fix.
+
+## 2026-09-23 — Cost of proof
+
+Nobody publishes what a gate costs per call. This is an open question in the field, not
+just here, and it is the cheapest of the open questions to answer — one repo, one
+benchmark, a number.
+
+It matters because a gate expensive enough to notice gets switched off, and a gate that
+gets switched off produces exactly the silent-gap failure the catalogue is about. Overhead
+is therefore a security property, not a performance footnote.
+
+What is not known: per-call cost of writing a receipt, cost of chain verification as the
+chain grows, and whether verification cost is linear or worse. No measurement exists.
+Publishing one would be a small contribution with no competition for it.
+
 ## 2026-09-22 — What the market is actually blocked on
 
 Not a roadmap. What enterprises name as the reason agents stay in pilot, recorded so later
