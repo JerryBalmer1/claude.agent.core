@@ -172,6 +172,108 @@ do not overclaim.
 - Whether refusal receipts leak information an attacker could use to map the allow list.
 - Which reachable surfaces are wrapped, which are accepted risks, and who decides.
 
+## 2026-09-23 — Ontology derived from who will act on it
+
+The conventional order is to model the domain first and hope for adoption afterwards. The
+inversion is to derive the model from the people who will use it: a node earns its place
+because a named role would act on it, and a node no role acts on does not get one.
+
+The roles are examples rather than a closed list, and the list is expected to grow as
+somebody finds a view nobody had written down. A developer at first clone — *I have
+downloaded this, now what* — wants the shortest path from a cold repository to a working
+command. A business analyst wants what the thing is for and what it refuses to do. An
+operator wants what runs, when, and what it does when it fails. An auditor wants what is
+recorded, by whom, and what would prove it wrong. A partner or client evaluating the work
+wants the boundary of the claim before the detail of the implementation.
+
+The consequence is testable, which is the reason for writing it down rather than admiring
+it. **A node that no view ever projects is dead weight.** Unused-node count is then a
+measurable signal of the same kind as refusal rate — see *"Metrics, and the ones that lie"*
+in [`docs/analysis/refusal.md`](analysis/refusal.md), which sets out why a count of things
+that did not happen reads differently from a count of things that did. The argument is not
+repeated here.
+
+Two risks, and neither is hypothetical.
+
+**Role-scoped vocabulary without a resolution layer produces synonyms, not an ontology.**
+The analyst's term and the developer's term for one concept have to resolve to one node, or
+the result is several vocabularies in a shared file, which is worse than one vocabulary
+nobody likes. That mapping is the hard part. Harvesting terminology per role is the easy
+part, and it is the part that looks like progress while the hard part is untouched.
+
+**A skill that generates per-role terminology produces model output, and model output is
+unverified by everything else in this repository.** Such output lands as *proposals a human
+accepts*, never as nodes written directly into the vocabulary. This is the same boundary the
+layer taxonomy already draws between a receipt and a judgment: a record of what was produced
+is not a decision that it was right, and the party that produces the record is not the party
+that accepts it.
+
+Distribution is parked. Whether any of this eventually ships as a plugin, a provider package
+or nothing at all is a later concern, and it is recorded here only so that leaving it alone
+is a decision rather than a drift.
+
+## 2026-09-23 — Stable nodes, dated labels
+
+Two things in a vocabulary change at different rates, and treating them as one thing is what
+makes a vocabulary go stale without anybody noticing. The **concepts** are comparatively
+stable: the distinction between a record of what happened and a decision about whether it was
+permitted has not moved in this repository's life. The **labels** attached to them churn —
+new teams, new roles, new fashions in how the same thing is named.
+
+The design consequence is a separation. A node has an identity of its own, distinct from any
+of its names; each name is a label, each label is scoped to a role, and each label carries an
+effective date. **A term whose meaning shifted over several years is not a new node.** It is a
+label whose scope changed, and recording it as a new concept loses the fact that the two are
+the same thing seen from different decades.
+
+The machinery for reading this already exists. Receipts are timestamped, so a decision can be
+read against the vocabulary that was in force when it was made rather than against the
+vocabulary in force when somebody later goes looking. That is the same requirement as
+recording which policy version applied at the moment of a decision, which the middle band of
+[`docs/analysis/gaps.md`](analysis/gaps.md) states and sources; the source is not restated
+here.
+
+The failure mode is the reason this is worth designing rather than assuming. **If labels
+update retroactively, the meaning of every past receipt becomes unstable** — a record written
+under one definition silently starts reading as though it had been written under another, and
+nothing in the chain detects it, because nothing in the record changed. The chain protects the
+bytes. It does not protect what the bytes meant.
+
+Therefore changes land as dated proposals and are never applied backwards. A definition that
+was wrong gets a new label with a later effective date, and the earlier one stays readable for
+the decisions taken under it.
+
+## 2026-09-23 — Vocabulary as a measured feedback loop
+
+The two entries above describe a structure. This one describes what keeps it honest.
+
+**The quality of the structuring done downstream is bounded by the vocabulary available at
+the entry point.** A distinction that has no name at intake cannot be carried through to
+anything that happens afterwards, and the loss is not recoverable later by working harder on
+the far side. That bound is paid on every call rather than once at design time, which is what
+connects it to the cost-of-proof entry below — the same per-call arithmetic, measured against
+a different property. It is not re-derived here.
+
+The shape that follows is a loop: **the system maintains a model of its own vocabulary and
+revises it from measured outcomes.** A label that never resolves anything, a node no view
+projects, a distinction that turns out to make no difference to what gets structured — each
+is an observation, and each feeds a revision. Nothing about this requires a claim beyond the
+mechanical one. It is a feedback loop whose inputs are measurements and whose revisions leave
+receipts, and the receipts are what separate it from a preference expressed repeatedly.
+
+The comparison that suggests itself is perceptual — a richer set of distinctions available at
+intake changes what can be resolved downstream — and **the comparison has a limit which is
+the point rather than a caveat.** Continuous, silent reweighting is not available here. Every
+revision has to be dated and receipted, or the meaning of prior decisions becomes unreadable,
+which is exactly the failure the entry above is about. A loop that quietly retunes itself
+between two decisions leaves no way to say which version of itself made the first one.
+
+That constraint is the price of auditability and it is accepted deliberately. It costs
+responsiveness: the loop can only move at the speed at which somebody accepts a dated
+proposal, which is slower than the evidence arrives. The alternative is a vocabulary that is
+always current and never accountable, and this repository has already chosen the other side
+of that trade everywhere else it comes up.
+
 ## 2026-09-23 — Receipt on bind
 
 A PowerShell attribute, [Receipted()], that writes a receipt at parameter-binding time

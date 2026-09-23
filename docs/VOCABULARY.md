@@ -13,6 +13,11 @@ function — are all approximate, and each entry names the seam.
 One term per entry. Where a term is enforced, the entry points at
 [`docs/DECISIONS.md`](DECISIONS.md) rather than restating the enforcement.
 
+**No entry below carries a version or an effective date.** A scheme that would separate a
+node's identity from its names — role-scoped labels, each dated — is proposed as **B20** in
+[`docs/BACKLOG.md`](BACKLOG.md) and is **not applied**, so every definition here
+reads as current and nothing recovers what it said when an earlier decision was taken under it.
+
 ---
 
 ## receipt
