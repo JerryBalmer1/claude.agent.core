@@ -13,6 +13,56 @@ One entry per idea, dated, newest first, under a heading of the form
 `## YYYY-MM-DD — <short title>`, with a few sentences of prose beneath it. No
 checkboxes, no status column, no priority field. This is a notebook, not a tracker.
 
+## 2026-09-22 — What the market is actually blocked on
+
+Not a roadmap. What enterprises name as the reason agents stay in pilot, recorded so later
+work can be checked against it rather than against our own assumptions.
+
+- **Nobody can answer "what did the agent do" in a form an auditor accepts.** Logs are the
+  agent's own account of itself. The honesty-of-the-record problem, restated by the buyer
+  rather than by us.
+- **Nobody can prove enforcement was on.** Showing a policy exists is not showing it was in
+  the path for a given call. Most products demonstrate the former and are bought as though
+  they demonstrated the latter.
+- **Approval does not scale.** Human-in-the-loop persists because there is no way to
+  pre-authorise a class of action. A policy-schema problem, not a logging problem.
+- **Liability has no artifact.** The blocker is rarely model quality. It is that nobody can
+  hand a regulator a defensible record and say we controlled this.
+
+Three further gaps, further out and less contested:
+
+- **Identity.** Agents act as service accounts. Provenance answers what happened but not who
+  authorised it: standing credentials, no expiry, no delegation trail, nothing an access
+  review can read.
+- **Multi-agent attribution.** The moment one agent calls another, who-did-this becomes
+  unanswerable. Our chain is single-actor by construction. Holding attribution across a
+  handoff has to start in the record format; it cannot be retrofitted.
+- **The cost of proof.** Every control layer taxes latency and tokens. A gate expensive
+  enough to notice gets switched off in production however good it is. Nobody is publishing
+  that number. Measuring and publishing our own overhead is both an immediate differentiator
+  and a durable position, and it is cheap compared with everything else in this file.
+
+## 2026-09-22 — What we do not have yet
+
+An honest inventory, written against the entry above. Provenance and gating exist. These do
+not.
+
+- **Judgment.** We prove what happened, not whether it was permitted. No receipt is mapped
+  to a named control. That mapping is the whole distance between evidence and compliance,
+  and it is the layer a buyer is actually purchasing.
+- **Coverage.** The chain proves the records present are unaltered. It cannot yet prove the
+  sentinel was in the path for every call. The absence problem from the adversarial
+  catalogue below — unsolved here, not merely untested.
+- **A policy schema.** Enforcement is code. It needs to be a declarative artifact a
+  non-engineer can read, diff and approve, versioned as evidence in its own right. Without
+  it, pre-authorising a class of action is impossible and approval cannot scale.
+- **Image attestation.** Building every image from a root image with the gate installed
+  makes the control a property of the substrate rather than a matter of good behaviour.
+  What is missing is proof: nothing attests that a running container descends from that
+  root with the gate intact and unmodified.
+- **Consequence.** Receipts do not act. Nothing blocks a merge, triggers a rollback, or
+  notifies anyone. Until a receipt changes an outcome, it is a record rather than a control.
+
 ## 2026-09-22 — An adversarial test catalogue
 
 These extend the verified-tampering entry below. The shared method does not change from one to
