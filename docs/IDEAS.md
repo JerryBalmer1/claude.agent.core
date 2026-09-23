@@ -212,6 +212,37 @@ Distribution is parked. Whether any of this eventually ships as a plugin, a prov
 or nothing at all is a later concern, and it is recorded here only so that leaving it alone
 is a decision rather than a drift.
 
+## 2026-09-23 — Stable nodes, dated labels
+
+Two things in a vocabulary change at different rates, and treating them as one thing is what
+makes a vocabulary go stale without anybody noticing. The **concepts** are comparatively
+stable: the distinction between a record of what happened and a decision about whether it was
+permitted has not moved in this repository's life. The **labels** attached to them churn —
+new teams, new roles, new fashions in how the same thing is named.
+
+The design consequence is a separation. A node has an identity of its own, distinct from any
+of its names; each name is a label, each label is scoped to a role, and each label carries an
+effective date. **A term whose meaning shifted over several years is not a new node.** It is a
+label whose scope changed, and recording it as a new concept loses the fact that the two are
+the same thing seen from different decades.
+
+The machinery for reading this already exists. Receipts are timestamped, so a decision can be
+read against the vocabulary that was in force when it was made rather than against the
+vocabulary in force when somebody later goes looking. That is the same requirement as
+recording which policy version applied at the moment of a decision, which the middle band of
+[`docs/analysis/gaps.md`](analysis/gaps.md) states and sources; the source is not restated
+here.
+
+The failure mode is the reason this is worth designing rather than assuming. **If labels
+update retroactively, the meaning of every past receipt becomes unstable** — a record written
+under one definition silently starts reading as though it had been written under another, and
+nothing in the chain detects it, because nothing in the record changed. The chain protects the
+bytes. It does not protect what the bytes meant.
+
+Therefore changes land as dated proposals and are never applied backwards. A definition that
+was wrong gets a new label with a later effective date, and the earlier one stays readable for
+the decisions taken under it.
+
 ## 2026-09-23 — Receipt on bind
 
 A PowerShell attribute, [Receipted()], that writes a receipt at parameter-binding time
