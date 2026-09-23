@@ -60,6 +60,14 @@
     pwsh session, or `pwsh -NoProfile -Command "... | ./scripts/Invoke-Preflight.ps1"`. Both were
     measured working; the -File form was measured failing.
 
+    AND IF YOU USE THE -Command FORM, END IT WITH `; exit $LASTEXITCODE`. Measured, on the run
+    that found it: `pwsh -NoProfile -Command "./scripts/Invoke-Preflight.ps1 -Path x"` returns 1
+    when the script exited 2, because -Command reports the success of the command line rather
+    than propagating a nested script's exit code. The same call with `; exit $LASTEXITCODE`
+    appended returns 2, and `pwsh -NoProfile -File` returns 2 with nothing appended. That matters
+    more here than it would elsewhere: this script's entire contract is its exit code, and the
+    form that silently rewrites 2 into 1 turns "I could not see" into "I found an overlap".
+
     A pattern is matched with -like against each path an open pull request touches, so a literal
     `docs/IDEAS.md` and a glob `docs/*.md` both match the same file. Separators are normalised to
     `/` on both sides, so a Windows-style `docs\IDEAS.md` matches too. There is no directory
@@ -78,7 +86,7 @@
     pwsh -NoProfile -File scripts/Invoke-Preflight.ps1 -Path docs/IDEAS.md
 
 .EXAMPLE
-    pwsh -NoProfile -Command "git diff --name-only develop | ./scripts/Invoke-Preflight.ps1"
+    pwsh -NoProfile -Command "git diff --name-only develop | ./scripts/Invoke-Preflight.ps1; exit $LASTEXITCODE"
 
 .OUTPUTS
     [pscustomobject] with Number, Title, Branch and Paths -- one per OVERLAPPING pull request.
