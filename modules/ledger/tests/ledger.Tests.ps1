@@ -343,7 +343,7 @@ Describe 'ledger' -Tag 'ledger' {
         It 'no copied file carries a CR byte, so the shas above are not an accident of checkout' {
             # If a checkout ever produced CRLF, every row above would fail with an opaque hash
             # mismatch. This says the cause out loud instead.
-            @($script:CopiedBlobs).Count | Should -Be 11 -Because 'the table must not be empty'
+            @($script:CopiedBlobs).Count | Should -Be 10 -Because 'the table must not be empty'
             $offenders = foreach ($c in $script:CopiedBlobs) {
                 $bytes = [System.IO.File]::ReadAllBytes((Join-Path $script:ModuleRoot $c.Path))
                 if ($bytes -contains 13) { $c.Path }
@@ -354,9 +354,19 @@ Describe 'ledger' -Tag 'ledger' {
         It 'the falsification control: one appended byte moves the blob sha' {
             # Without this, every row above could be passing because the hash function
             # returns a constant. It does not.
-            $bytes = [System.IO.File]::ReadAllBytes($script:Psm1Path)
-            $pinned = @($script:CopiedBlobs | Where-Object { $_.Path -eq 'ledger.psm1' }).Sha
-            Get-GitBlobSha -Path $script:Psm1Path | Should -BeExactly $pinned
+            #
+            # The control was ledger.psm1 until that row was retired -- core's ledger module
+            # diverges from upstream on purpose now, so it cannot be pinned. It moved to
+            # tests/sandbox/fail_path.ps1, the row least likely to move next: a carried sandbox
+            # script whose single claim was ported into python.Tests.ps1, so nothing maintains
+            # it, and it names no export surface, no version and no dependency. The control
+            # asserts both halves -- the pinned file matches, and one more byte does not.
+            $control = 'tests/sandbox/fail_path.ps1'
+            $pinned  = @($script:CopiedBlobs | Where-Object { $_.Path -eq $control }).Sha
+            $pinned | Should -Not -BeNullOrEmpty -Because 'the control must be a row that is still pinned'
+            $full   = Join-Path $script:ModuleRoot $control
+            $bytes  = [System.IO.File]::ReadAllBytes($full)
+            Get-GitBlobSha -Path $full | Should -BeExactly $pinned
             Get-GitBlobShaOfBytes -Bytes ($bytes + [byte]0x20) | Should -Not -BeExactly $pinned
         }
 
