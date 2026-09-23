@@ -63,5 +63,5 @@ Tick exactly one. Any other pair fails the `branch-flow` check.
 
 - [ ] No module code outside the modules a run order named
 - [ ] No sibling repository was touched
-- [ ] No container surface was added - substrate is never a container
+- [ ] No container surface was added - core is never a container
 - [ ] No Python outside the one prefix the runtime rule permits

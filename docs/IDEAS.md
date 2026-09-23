@@ -363,17 +363,25 @@ makes it the cheapest instance of the problem to fix.
 
 ## 2026-09-23 — Cost of proof
 
-Nobody publishes what a gate costs per call. This is an open question in the field, not
-just here, and it is the cheapest of the open questions to answer — one repo, one
-benchmark, a number.
+**Narrowed.** This entry opened *"nobody publishes what a gate costs per call"*, and that is
+too wide. Gate **latency** is published: seven sources report it with numbers, and
+[`analysis/suppressed-outputs.md`](analysis/suppressed-outputs.md) → *"Correction — cost of
+proof is partly published"* lists them. The wide claim was made here before the literature
+was read. It is corrected in place and said out loud rather than deleted, because the wide
+version is what was in the tree.
+
+The narrow claim is the defensible one: what is **unpublished** is the cost of the *evidence*
+a gate leaves behind — receipt size per action, and verify time as a function of chain
+length. Neither appears in those sources. The per-call latency question is not ours.
 
 It matters because a gate expensive enough to notice gets switched off, and a gate that
 gets switched off produces exactly the silent-gap failure the catalogue is about. Overhead
 is therefore a security property, not a performance footnote.
 
-What is not known: per-call cost of writing a receipt, cost of chain verification as the
-chain grows, and whether verification cost is linear or worse. No measurement exists.
-Publishing one would be a small contribution with no competition for it.
+**F91** is one point on the chain-length half — verify at 14 records — and one point gives no
+slope: constant, linear and quadratic all pass through it. **B17** is the harness that would
+vary the chain length instead of reading it once. That is what is still worth publishing, and
+it is narrower than a benchmark of the gate.
 
 ## 2026-09-22 — What the market is actually blocked on
 

@@ -1,12 +1,16 @@
 # Command reference
 
-Four exported functions and one alias, from
-[../src/ledger/Ledger.psd1](../src/ledger/Ledger.psd1):
+Five exported functions and one alias, from
+[../ledger.psd1](../ledger.psd1):
 
 ```powershell
-FunctionsToExport = @('Invoke-LedgerForce', 'Get-LedgerStatus', 'Get-LedgerVerify', 'Get-LedgerEntry')
+FunctionsToExport = @('Invoke-LedgerForce', 'Get-LedgerStatus', 'Get-LedgerVerify', 'Get-LedgerEntry', 'Add-LedgerRecord')
 AliasesToExport   = @('ledger-force')
 ```
+
+This reference covers four of the five, and the alias. `Add-LedgerRecord` is described in
+[../README.md](../README.md); it became public at `33e81e9`, and exporting it is what retired this
+file's byte pin (`docs/DECISIONS.md` **D002**, FINDINGS **F88**).
 
 Import the module by its manifest:
 

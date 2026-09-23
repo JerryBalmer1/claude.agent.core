@@ -176,9 +176,13 @@ pins:
 Not checklist items — nobody has to answer these before publication. They are here so that
 publication does not imply they were settled.
 
-- **What a gate costs per call.** `docs/IDEAS.md` (*cost of proof*): nobody publishes the number,
-  overhead is a security property because an expensive gate gets switched off, and no measurement
-  exists here either.
+- **What the evidence a gate leaves behind costs.** `docs/IDEAS.md` (*cost of proof*), narrowed
+  after the literature was read: gate **latency** is published — seven sources, listed in
+  [`analysis/suppressed-outputs.md`](analysis/suppressed-outputs.md) → *"Correction — cost of proof
+  is partly published"*. What is **unpublished** is receipt size per action and verify time as a
+  function of chain length. Overhead is a security property because an expensive gate gets switched
+  off. **F91** is one point on the second half and **B17** is the harness that would give it a
+  slope; the per-call latency question is not ours.
 - **Whether the adversarial catalogue becomes a conformance suite.** `docs/IDEAS.md` ends the
   catalogue with the condition — *"if the receipt format and the policy schema are ever published
   as a spec"* — and neither has been.
