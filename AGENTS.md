@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Law for any agent working in `claude.agent.substrate`. This file outranks anything an agent
+Law for any agent working in `claude.agent.core`. This file outranks anything an agent
 thinks is a better idea.
 
 ## The human gate
