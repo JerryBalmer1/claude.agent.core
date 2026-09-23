@@ -172,6 +172,98 @@ do not overclaim.
 - Whether refusal receipts leak information an attacker could use to map the allow list.
 - Which reachable surfaces are wrapped, which are accepted risks, and who decides.
 
+## 2026-09-23 — The plan as a record, not a runner
+
+A packet is prose, and prose has no executor, so the agent is the interpreter. That is not a
+defect to be engineered away — it is the reason a packet can say *stop and write a finding*
+without anybody having implemented a stop. What it does mean is that the plan and the account of
+what the plan did are two separate documents, both written by hand, and only the second one
+carries measurements.
+
+The structured version is a **manifest** rather than a script. Each item carries an id, a
+statement of work, the ids it depends on, a precondition, and a postcondition — and the
+postcondition is a **measurement rather than an intention**. *"The README is correct"* is an
+intention. *"`git grep -n substrate -- AGENTS.md` returns nothing"* is a measurement, and the
+difference is not stylistic: only the second one can be wrong in a way anybody notices.
+
+**The argument against building a runner for it is stronger than the argument for.** A manifest
+schema that grows conditionals — skip this item when that one fails, branch here, loop until — is
+a programming language designed by accretion by people who are not designing a programming
+language, and it will be a bad one. The second cost is per-plan rather than per-schema: encoding
+a one-off plan as data costs more than writing the same plan as prose, and almost every plan here
+is a one-off. A runner pays a fixed cost to remove a variable cost that is already small.
+
+**What is worth building first is the manifest as a report format, not as an input.** If each
+item carries its measured postcondition, the retrospective at the end is *generated from fields*
+rather than composed from memory — the same move `docs/FINDINGS.md` already makes against
+recalled numbers, applied one level up to the account of a run rather than to the run's contents.
+
+The trigger to revisit is **a second person running these packets without Jerry in the loop** —
+not a number of runs. Volume is the wrong signal: the interpretation problem stays invisible
+while one reader interprets consistently, and it becomes the whole problem the moment two readers
+disagree about what an item asked for.
+
+The postcondition-as-measurement rule is not proposed here in the abstract. **F90** is the
+instance that proved it: PR #21 carried a postcondition that
+`git grep -n substrate -- AGENTS.md` return nothing, the residual match was a live citation of a
+path that exists on disk, and satisfying the postcondition meant breaking a working reference. It
+was withdrawn. A measurement can be *wrong*, which is exactly why it is worth more than an
+intention — an intention has nothing to be wrong about.
+
+## 2026-09-23 — The second-caller rule
+
+**A script becomes a module candidate when a second repository calls it.** The threshold is a
+count rather than a judgement about how reusable something feels, and that is the whole appeal: a
+promotion rule that rests on taste gets argued, and one that rests on a number gets checked.
+
+The distinction underneath it is import against invoke. A module is a unit something *imports*; a
+script is a unit something *runs*. `modules/ledger`, `modules/plans` and `modules/policy` are
+modules because importers exist — their own suites, and `scripts/Measure-Modules.ps1`, which
+loads all three to count what they export. The check scripts are not, because nothing imports
+one: `.github/workflows/ci.yml` runs each `scripts/ci/Test-*.ps1` as a file, and a file that is
+only ever run is a script however much of it looks like a library.
+
+Nothing here has crossed the threshold yet. Every importer named above is in this tree, so the
+rule is currently stated and not exercised.
+
+**Two callers means promote to a module inside these repositories. It does not mean publish.**
+Publishing to the world is a different decision needing more than two callers, because it
+attaches versioning, deprecation and strangers' expectations to something that presently answers
+to one reader. Those obligations are the cost, and a count of two does not pay them.
+
+The near-term test is **whether `claude.agent.images` calls core's scripts through the submodule
+or keeps its own copies**, and it is a real test because the two outcomes diverge. Copies drift,
+and this repository already ships the evidence: `scripts/forensic.ps1` opens with a
+*COPIED, NOT VENDORED* header naming its origin commit and stating that if the image builder's
+version moves, this one does not follow by itself. A call forces the opposite discipline — core
+stops being allowed to assume it is the only consumer of its own scripts, and every change to one
+acquires an audience.
+
+## 2026-09-23 — Templatization has a counting problem
+
+One instance is a task. Three is a pattern. **Nothing here counts instances**, so the rule that
+would separate the two has no input.
+
+The reason is structural rather than an oversight. A retrospective looks *within* a run — what
+this run cost, where it departed from the packet, what it found. Recurrence is a **cross-run**
+signal by definition, and no single retrospective can carry it. Neither the register that would
+hold the count nor the observation that would feed it exists, and the second absence is the
+harder one: the agent is cleared between runs and carries nothing forward.
+
+**That constraint decides where recurrence can be counted at all.** It can only be counted
+against what is written in the tree, which makes the retrospectives themselves the corpus and a
+human the reader. This is not a workaround pending automation; it is what the runtime permits. An
+agent asked *"have you done this before?"* can only answer from the tree, and an agent that
+answers from anything else is answering from a reconstruction.
+
+The risk on the other side is worth stating before anybody starts extracting. **A template pulled
+from three examples encodes the accidents of those three**, and it encodes them invisibly,
+because a template does not record which of its clauses were load-bearing and which were
+incidental to the runs that produced it. A premature template is worse than prose for one
+specific reason: prose does not pretend to be authoritative. A reader who disagrees with a
+paragraph edits it; a reader who disagrees with a template assumes the template knows something
+they do not.
+
 ## 2026-09-23 — Prose and enforcement, diffed
 
 The ontology work below makes a claim that can be lost, and there is exactly one way to lose it:

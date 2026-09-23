@@ -18,6 +18,8 @@ node's identity from its names — role-scoped labels, each dated — is propose
 [`docs/BACKLOG.md`](BACKLOG.md) and is **not applied**, so every definition here
 reads as current and nothing recovers what it said when an earlier decision was taken under it.
 
+**"Second caller" is proposed, not applied**: the count belongs in **B21**'s `callers` field.
+
 ---
 
 ## receipt
