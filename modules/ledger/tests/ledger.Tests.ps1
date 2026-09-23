@@ -345,7 +345,7 @@ Describe 'ledger' -Tag 'ledger' {
         It 'no copied file carries a CR byte, so the shas above are not an accident of checkout' {
             # If a checkout ever produced CRLF, every row above would fail with an opaque hash
             # mismatch. This says the cause out loud instead.
-            @($script:CopiedBlobs).Count | Should -Be 10 -Because 'the table must not be empty'
+            @($script:CopiedBlobs).Count | Should -Be 9 -Because 'the table must not be empty'
             $offenders = foreach ($c in $script:CopiedBlobs) {
                 $bytes = [System.IO.File]::ReadAllBytes((Join-Path $script:ModuleRoot $c.Path))
                 if ($bytes -contains 13) { $c.Path }

@@ -24,6 +24,17 @@
     # every HEAD; re-asserting it forbids core from ever changing its own ledger module. F76 set
     # the precedent. From that commit core's ledger module diverges from upstream ON PURPOSE, and
     # no row in this file claims otherwise.
+    #
+    # docs/commands.md is absent for the same reason as ledger.psm1, one axis over. It was pinned
+    # at 4561a6acdc810c18ad61c18db90e012514417afd until core corrected it to the five-name export
+    # list its own ledger.psd1 actually ships. A pin on a doc is a claim that the doc still
+    # describes the SOURCE module, and once core's exports diverge on purpose that claim stops
+    # being true and starts being a veto on fixing the doc. D002 again: retire the row, do not
+    # re-pin. F88 measured the retirement and named the third file -- the hard-coded row count at
+    # ledger.Tests.ps1:348 -- that has to move with it.
+    #
+    # docs/theory-of-operation.md stays pinned: PR #20 measured it as not stale on the export
+    # axis, and it states no export list at all.
     SourceRepo = 'claude.build.ledger'
     SourceSha  = 'd57938d1eed2b5df13435d7820826e50de30483d'
 
@@ -34,7 +45,6 @@
         @{ Path = 'python/validators.py';             Source = 'src/ledger/python/validators.py';  Sha = '8f9bbbe4c2b475154fd43510ca0b610b6711aa4d' }
         @{ Path = 'python/requirements.txt';          Source = 'requirements.txt';                 Sha = 'd7f3e260185c6ff62fb019fee20b67e88f5d6a87' }
         @{ Path = 'docs/theory-of-operation.md';      Source = 'docs/theory-of-operation.md';      Sha = '3e4579539dbb805e55720d675dd85bdc32263272' }
-        @{ Path = 'docs/commands.md';                 Source = 'docs/commands.md';                 Sha = '4561a6acdc810c18ad61c18db90e012514417afd' }
         @{ Path = 'tests/sandbox/ledger_chain.ps1';   Source = 'tests/sandbox/ledger_chain.ps1';   Sha = '2dbcbba94168d13a7193adf1e36381a2cea14309' }
         @{ Path = 'tests/sandbox/forensic_chain.ps1'; Source = 'tests/sandbox/forensic_chain.ps1'; Sha = '55b8c74403f6327d60a334969f8700cf06dfbe41' }
         @{ Path = 'tests/sandbox/fail_path.ps1';      Source = 'tests/sandbox/fail_path.ps1';      Sha = '02abe8bbeeab39e45d45970cdc75d8aa05d2e0b9' }
