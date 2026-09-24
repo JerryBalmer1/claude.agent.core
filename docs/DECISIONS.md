@@ -266,3 +266,34 @@ schema admits `sig`, and the schema has no `additionalProperties` key.
 success that sounds like verification and isn't. **Reasoning at the time.** A signature that is
 silently dropped is worse than no signature field at all. Signed receipts are I15. Until then,
 refusing the field is the honest answer.
+
+## D010 — `Invoke-LedgerForce -Policy` refuses as `policy-not-implemented`, and loads nothing from outside core
+
+**Decided** 2026-09-24, on `feature/policy-refuses` (R1 PR 1).
+
+**The decision.** `-Policy` no longer resolves `claude.build.inspector`, either as a command
+already in the session or as a sibling folder at `<repo>/../claude.build.inspector`. Core's own
+`modules/policy` can't judge an action (F96), so `-Policy` refuses. It raises the terminating
+`LedgerPolicyNotImplemented` (category `NotImplemented`, message starting
+`reason=policy-not-implemented:`) before Python is spawned and before any receipt is written.
+`-Halt` and `-PolicyPath` refuse with it. A missing module is never answered with a warning
+followed by a force. That was the removed path, and F97 records it.
+
+**Enforced by** `modules/ledger/ledger.psm1:550-563`, and by the Context *-Policy refuses as
+policy-not-implemented, and nothing fails open (D010)* at `modules/ledger/tests/ledger.Tests.ps1:1079`.
+It asserts the ErrorId, category and reason, that no warning is written, that the refusal
+comes before the Python lookup and before the append, and that `-Halt` and `-PolicyPath` refuse
+too. It also asserts that an `Invoke-ClaudeInspector` already in the session isn't consulted. The
+falsification at `:1154` copies the module into a throwaway repo root and forces in a child pwsh,
+once with no sibling folder and once with a clean-reporting stub sibling. Both must refuse.
+`LedgerPolicyNotImplemented` is in the pinned error vocabulary in the same file.
+`tests/sandbox/ledger_chain.ps1` TEST 6 and TEST 9 were rewritten to the same behaviour, and its
+byte pin in `modules/ledger/tests/fixtures/copied-blobs.psd1` was retired, on the D002 precedent.
+
+**Cost of retiring it.** Bringing back a sibling lookup makes the verdict depend on what folder
+happens to sit next to the checkout. With the folder absent, the caller gets a force that looks
+evaluated and wasn't. **Reasoning at the time.** A switch named `-Policy` is a request for a
+judgment. A refusal tells the caller there is none. A warning followed by a force tells them
+nothing they will read. When `modules/policy` gains a function that takes an action and returns
+a verdict, this entry is replaced by one that routes `-Policy` through it, and the refusal
+becomes the path for when that function can't decide.

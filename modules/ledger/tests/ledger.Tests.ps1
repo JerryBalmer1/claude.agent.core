@@ -345,7 +345,7 @@ Describe 'ledger' -Tag 'ledger' {
         It 'no copied file carries a CR byte, so the shas above are not an accident of checkout' {
             # If a checkout ever produced CRLF, every row above would fail with an opaque hash
             # mismatch. This says the cause out loud instead.
-            @($script:CopiedBlobs).Count | Should -Be 9 -Because 'the table must not be empty'
+            @($script:CopiedBlobs).Count | Should -Be 8 -Because 'the table must not be empty'
             $offenders = foreach ($c in $script:CopiedBlobs) {
                 $bytes = [System.IO.File]::ReadAllBytes((Join-Path $script:ModuleRoot $c.Path))
                 if ($bytes -contains 13) { $c.Path }
@@ -509,14 +509,14 @@ Describe 'ledger' -Tag 'ledger' {
 
         It 'every error id raised by the module is in the pinned vocabulary' {
             $ids = Get-LedgerErrorId -Path $script:Psm1Path
-            # InspectorPolicyHalt is deliberately absent: it is raised by claude.build.inspector
-            # and travels up through Invoke-LedgerForce UNWRAPPED. Nothing here constructs it,
-            # and a version of this list that included it would be describing a different module.
+            # InspectorPolicyHalt is absent because nothing can raise it any more: -Policy no
+            # longer calls claude.build.inspector, it refuses as LedgerPolicyNotImplemented (D010).
             $ids.All | Should -Be @(
                 'LedgerAppendFailed', 'LedgerBadRecord', 'LedgerBadSelf', 'LedgerBadSettings',
                 'LedgerBrokenChain', 'LedgerCliMissing', 'LedgerCorruptLine', 'LedgerFileMissing',
                 'LedgerMissingApiKey', 'LedgerNoResult', 'LedgerOutputHashMismatch',
-                'LedgerPythonMissing', 'LedgerResultMismatch', 'LedgerSnakeFailed')
+                'LedgerPolicyNotImplemented', 'LedgerPythonMissing', 'LedgerResultMismatch',
+                'LedgerSnakeFailed')
         }
 
         It 'a missing ledger is a terminating LedgerFileMissing, not an empty result' {
@@ -1071,6 +1071,120 @@ Describe 'ledger' -Tag 'ledger' {
             $text = [System.IO.File]::ReadAllText($script:Psm1Path)
             $text | Should -Match 'System\.Text\.Json\.JsonDocument\]::Parse'
             $text | Should -Match 'function ConvertTo-LedgerCanonicalJson'
+        }
+    }
+
+    # ================================================================== -Policy refuses
+
+    Context '-Policy refuses as policy-not-implemented, and nothing fails open (D010)' {
+
+        BeforeAll {
+            $script:RefusalLedgerDir = New-TempDir
+
+            function Get-PolicyRefusal {
+                # The ErrorRecord -Policy raised, and every warning it wrote on the way.
+                param([hashtable]$Extra = @{})
+                $warn = $null
+                $err  = $null
+                try {
+                    Invoke-LedgerForce -Prompt 'Write add(a, b).' -Mode 'dry-run' -SkipLedger -Policy @Extra `
+                        -WarningVariable warn -WarningAction SilentlyContinue | Out-Null
+                }
+                catch { $err = $_ }
+                [pscustomobject]@{ Error = $err; Warnings = @($warn) }
+            }
+        }
+
+        It '-Policy is a terminating LedgerPolicyNotImplemented whose message starts reason=policy-not-implemented' {
+            $r = Get-PolicyRefusal
+            $r.Error | Should -Not -BeNullOrEmpty -Because 'a force that returns under -Policy was not evaluated'
+            $r.Error.FullyQualifiedErrorId | Should -Match '^LedgerPolicyNotImplemented,'
+            $r.Error.CategoryInfo.Category | Should -Be 'NotImplemented'
+            $r.Error.Exception.Message     | Should -Match '^reason=policy-not-implemented: '
+        }
+
+        It 'writes no warning: a refusal, never a warning followed by a force' {
+            (Get-PolicyRefusal).Warnings | Should -BeNullOrEmpty
+        }
+
+        It 'refuses before Python: a missing interpreter is not reached' {
+            $r = Get-PolicyRefusal -Extra @{ PythonPath = 'no-such-python-' + [guid]::NewGuid().ToString('N') }
+            $r.Error.FullyQualifiedErrorId | Should -Match '^LedgerPolicyNotImplemented,' `
+                -Because 'LedgerPythonMissing here would mean the refusal came after the force had started'
+        }
+
+        It 'refuses before the receipt: a real ledger path stays absent' {
+            $p = Join-Path $script:RefusalLedgerDir 'refused.jsonl'
+            try {
+                Invoke-LedgerForce -Prompt 'Write add(a, b).' -Mode 'dry-run' -Policy -LedgerPath $p | Out-Null
+            }
+            catch { $_.FullyQualifiedErrorId | Should -Match '^LedgerPolicyNotImplemented,' }
+            $p | Should -Not -Exist
+        }
+
+        It '-Policy -Halt and -Policy -PolicyPath refuse the same way, and name the target' {
+            $target = New-TempDir
+            (Get-PolicyRefusal -Extra @{ Halt = $true }).Error.FullyQualifiedErrorId |
+                Should -Match '^LedgerPolicyNotImplemented,'
+            $r = Get-PolicyRefusal -Extra @{ PolicyPath = $target }
+            $r.Error.FullyQualifiedErrorId | Should -Match '^LedgerPolicyNotImplemented,'
+            $r.Error.TargetObject          | Should -Be $target
+        }
+
+        It 'the parameter law still comes first: -Halt or -PolicyPath alone is LedgerBadSettings' {
+            { Invoke-LedgerForce -Prompt 'x' -Mode 'dry-run' -SkipLedger -Halt } |
+                Should -Throw -ErrorId 'LedgerBadSettings,Invoke-LedgerForce'
+            { Invoke-LedgerForce -Prompt 'x' -Mode 'dry-run' -SkipLedger -PolicyPath (New-TempDir) } |
+                Should -Throw -ErrorId 'LedgerBadSettings,Invoke-LedgerForce'
+        }
+
+        It 'an Invoke-ClaudeInspector already in the session is not consulted' {
+            # The removed resolver's first step was "a command of that name is loaded". A stub
+            # that reports a clean project must not turn the refusal into a pass.
+            function global:Invoke-ClaudeInspector {
+                [pscustomobject]@{ Scope = 'Project'; PolicyEvaluated = $true; PolicyRuleCount = 1
+                    PolicySourceCount = 1; PolicyHaltCount = 0; Findings = @() }
+            }
+            try {
+                (Get-PolicyRefusal).Error.FullyQualifiedErrorId | Should -Match '^LedgerPolicyNotImplemented,'
+            }
+            finally { Remove-Item -LiteralPath 'function:global:Invoke-ClaudeInspector' -ErrorAction SilentlyContinue }
+        }
+
+        It 'falsification: with a sibling claude.build.inspector folder present or absent, -Policy never fails open' -ForEach @(
+            @{ Sibling = 'absent' }
+            @{ Sibling = 'present' }
+        ) {
+            # The removed resolver's second step was <repo>/../claude.build.inspector. Copy the
+            # module to a throwaway repo root, put a clean-reporting stub next to it (or not),
+            # and force in a child pwsh so nothing from this session leaks in.
+            $root = New-TempDir
+            $copy = Join-Path $root 'repo' 'modules' 'ledger'
+            $null = New-Item -ItemType Directory -Path $copy -Force
+            Copy-Item -Path (Join-Path $script:ModuleRoot 'ledger.psd1'), $script:Psm1Path -Destination $copy
+            if ($Sibling -eq 'present') {
+                $stub = Join-Path $root 'claude.build.inspector' 'src' 'claude.build.inspector'
+                $null = New-Item -ItemType Directory -Path $stub -Force
+                [System.IO.File]::WriteAllText((Join-Path $stub 'claude.build.inspector.psm1'),
+                    "function Invoke-ClaudeInspector { [pscustomobject]@{ Scope = 'Project'; PolicyEvaluated = `$true; PolicyRuleCount = 1; PolicySourceCount = 1; PolicyHaltCount = 0; Findings = @() } }`n",
+                    $script:Utf8NoBom)
+                [System.IO.File]::WriteAllText((Join-Path $stub 'claude.build.inspector.psd1'),
+                    "@{ RootModule = 'claude.build.inspector.psm1'; ModuleVersion = '0.2.0'; GUID = '$([guid]::NewGuid())'; FunctionsToExport = @('Invoke-ClaudeInspector') }`n",
+                    $script:Utf8NoBom)
+            }
+            $probe = @(
+                '$ErrorActionPreference = ''Stop'''
+                "Import-Module -Name '$(Join-Path $copy 'ledger.psd1')' -Force"
+                '$id = ''returned'''
+                '$w = $null'
+                'try { Invoke-LedgerForce -Prompt ''x'' -Mode dry-run -SkipLedger -Policy -WarningVariable w -WarningAction SilentlyContinue | Out-Null }'
+                'catch { $id = $_.FullyQualifiedErrorId }'
+                '$loaded = [bool](Get-Command -Name Invoke-ClaudeInspector -ErrorAction SilentlyContinue)'
+                '[Console]::Out.WriteLine(($id, @($w).Count, $loaded) -join ''|'')'
+            ) -join "`n"
+            $out = (& pwsh -NoProfile -NonInteractive -Command $probe | Out-String).Trim()
+            $out | Should -Be 'LedgerPolicyNotImplemented,Invoke-LedgerForce|0|False' `
+                -Because "sibling $Sibling`: refused, no warning, and no inspector pulled into the session"
         }
     }
 

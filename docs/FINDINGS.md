@@ -817,3 +817,37 @@ So the interface names an evaluation and has no enforcement behind it. A caller 
 "this action is halted" is reading a judgment the op never made. Not fixed. I14 records it and leaves it for a
 later packet. Enforcement needs a policy function that takes an action, and that is a module change and a
 decision, not a change to the wire format.
+
+## F97 — core `-Policy` failed open to a sibling folder since `46debc4`
+
+Measured 2026-09-24 (R1 PR 1). From core's birth commit
+[`46debc4`](https://github.com/JerryBalmer1/claude.agent.core/commit/46debc479752fe293f69eba7b7e1eacb085d135e)
+to `cce186a`, `Invoke-LedgerForce -Policy` resolved its judge outside the repository.
+`modules/ledger/ledger.psm1:42-44` built the path `<repo>/../claude.build.inspector/src/claude.build.inspector/claude.build.inspector.psd1`.
+`Resolve-LedgerInspector` tried an `Invoke-ClaudeInspector` already loaded, then that path. When
+neither hit, `ledger.psm1:617-621` wrote a warning and carried on *"as if -Policy were absent"*.
+It came in with the clean copy of `claude.agent.substrate@e40ba414`. Core never wrote it.
+
+Reproduced by copying `develop@cce186a`'s `ledger.psd1`, `ledger.psm1` and `python/` into a throwaway
+repo root with no sibling folder, then forcing with `-Policy`:
+
+```
+ref=develop sibling=absent sibling-folder-exists=False
+RETURNED  Output.Length=32 PolicyEvaluated=False PolicyHaltCount=0
+warnings: 1
+  WARNING: [ledger] policy: claude.build.inspector not found at <tmp>\claude.build.inspector\src\claude.build.inspector\claude.build.inspector.psd1; continuing as if -Policy were absent
+```
+
+A caller asked for policy and got a forced output. The only trace that nothing was evaluated was
+one line on the warning stream. On the workstation the sibling folder existed, so `-Policy` there
+ran whatever `claude.build.inspector` was checked out next door. The verdict was a property of the
+folder layout, not of core.
+
+Fixed by D010. `-Policy` now refuses as `LedgerPolicyNotImplemented`. The same probe on the
+branch, with no sibling and with the real `claude.build.inspector` copied in as the sibling,
+returns `REFUSED LedgerPolicyNotImplemented,Invoke-LedgerForce`, `warnings: 0` and
+`inspector loaded: False` both times. The R1 brief asked for the real inspector folder to be renamed away on
+disk. That rename failed with *"The process cannot access the file because it is being used by
+another process"*, because the folder is open in the editor, so the throwaway-root copy stands
+in for it. `modules/ledger/docs/theory-of-operation.md:205-207` still describes the removed
+pass-through. It is a byte-pinned source document and isn't edited here.

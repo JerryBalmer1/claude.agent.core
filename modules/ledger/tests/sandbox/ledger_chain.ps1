@@ -10,13 +10,14 @@
       3. A tampered copy in the sandbox makes Get-LedgerVerify throw.
       4. The dry-run path never imports anthropic.
       5. Live mode with no key throws before spawn and writes no receipt.
-      6. The optional -Policy / -Halt pass-through to claude.build.inspector: off by
-         default, one inspect when asked, InspectorPolicyHalt unwrapped under -Halt,
-         and src/ still imports no policy module of its own.
+      6. -Policy refuses (core D010): off by default; asked for, it is a terminating
+         LedgerPolicyNotImplemented, reason=policy-not-implemented, with no warning, no
+         sibling claude.build.inspector consulted, and nothing forced. src/ still imports
+         no policy module of its own.
       7. Schema and chain rejection, forged line by line.
       8. The writer rehashes the accepted output and refuses a hash it cannot reproduce
          - including one that is right about the bytes and wrong about the case.
-      9. A halt writes no receipt, with no -SkipLedger to hide behind.
+      9. A -Policy -Halt refusal writes no receipt, with no -SkipLedger to hide behind.
      10. The result event must describe the run that was asked for: a mode, validator or
          named model that comes back different raises LedgerResultMismatch. An omitted
          -Model is the one exemption, and attempts is not verified at all.
@@ -277,16 +278,20 @@ Assert-That ($null -eq $skipped.LedgerSelf)        'LedgerSelf is null under -Sk
 Assert-That ($countAfterSkip -eq $countBeforeSkip) 'Count unchanged under -SkipLedger'
 
 # ---------------------------------------------------------------- 6
-Write-Section 'TEST 6  optional -Policy / -Halt pass-through to claude.build.inspector'
+Write-Section 'TEST 6  -Policy refuses as policy-not-implemented, and nothing fails open'
+
+# Rewritten in claude.agent.core under D010. Until then this test proved a pass-through to a
+# sibling claude.build.inspector that warned and carried on when the sibling was missing;
+# core removed that path. Nothing here is byte-identical to claude.build.ledger@d57938d any more.
 
 # Everything this test creates lives in $env:TEMP and is removed in the finally block.
 $script:TempRoots = [System.Collections.Generic.List[string]]::new()
 
 function New-PolicyFixture {
     <#
-        A throwaway project the policy parser reads as halt-weight law, with an allow
-        list that trips Inspector's allow-contains-bash check. Same shape as the fixture
-        in claude.build.inspector's own suite.
+        A throwaway project with written halt-weight law and an allow list that hands out
+        the shell. Under the removed pass-through this was the shape that halted; now it
+        must refuse exactly like every other -Policy call.
     #>
     param([Parameter(Mandatory)][string]$Name)
 
@@ -318,65 +323,26 @@ function New-PolicyFixture {
     return $root
 }
 
-function New-LawlessFixture {
+function Invoke-PolicyRefusal {
     <#
-        The dangerous shape: the same shell-handing settings.json as New-PolicyFixture,
-        with the law removed. Before PolicySourceCount this was indistinguishable from a
-        clean project - evaluated, no rules, no halts - so deleting AGENTS.md was enough
-        to switch -Halt off silently. -EmptyAgents leaves a blank AGENTS.md instead of
-        no file, because blanking it and deleting it are the same move.
+        One -Policy force. Returns the ErrorId it raised ('' if it returned), the message,
+        and every warning it wrote. A returned result is the failure this test exists for.
     #>
-    param(
-        [Parameter(Mandatory)][string]$Name,
-        [switch]$EmptyAgents
-    )
-
-    $root = Join-Path -Path $env:TEMP -ChildPath ('ledger-chain-{0}-{1}' -f $PID, $Name)
-    if (Test-Path -LiteralPath $root) { Remove-Item -LiteralPath $root -Recurse -Force }
-    [void](New-Item -ItemType Directory -Path $root -Force)
-    $script:TempRoots.Add($root)
-
-    $utf8 = [System.Text.UTF8Encoding]::new($false)
-    if ($EmptyAgents) {
-        [System.IO.File]::WriteAllText((Join-Path -Path $root -ChildPath 'AGENTS.md'), '', $utf8)
+    param([hashtable]$Extra = @{})
+    $warn = $null
+    $out  = [pscustomobject]@{ Id = ''; Message = ''; Target = $null; Warnings = @() }
+    try {
+        Invoke-LedgerForce -Prompt 'Write add(a, b).' -Validator 'has_function_def' `
+            -Mode 'dry-run' -SkipLedger -Policy @Extra `
+            -WarningVariable warn -WarningAction SilentlyContinue | Out-Null
     }
-
-    $claudeDir = Join-Path -Path $root -ChildPath '.claude'
-    [void](New-Item -ItemType Directory -Path $claudeDir -Force)
-    $settings = [ordered]@{
-        permissions = [ordered]@{
-            allow = @('Bash(*)')
-            deny  = @('Read(./.env)')
-            ask   = @()
-        }
+    catch {
+        $out.Id      = $_.FullyQualifiedErrorId
+        $out.Message = $_.Exception.Message
+        $out.Target  = $_.TargetObject
     }
-    [System.IO.File]::WriteAllText(
-        (Join-Path -Path $claudeDir -ChildPath 'settings.json'),
-        (($settings | ConvertTo-Json -Depth 5) + "`n"),
-        $utf8)
-
-    return $root
-}
-
-function New-PermissiveFixture {
-    <#
-        A project that really did write its law down and simply forbids nothing. It must
-        stay quiet: this is the false positive that a rule-count check would raise and a
-        source-count check must not.
-    #>
-    param([Parameter(Mandatory)][string]$Name)
-
-    $root = Join-Path -Path $env:TEMP -ChildPath ('ledger-chain-{0}-{1}' -f $PID, $Name)
-    if (Test-Path -LiteralPath $root) { Remove-Item -LiteralPath $root -Recurse -Force }
-    [void](New-Item -ItemType Directory -Path $root -Force)
-    $script:TempRoots.Add($root)
-
-    [System.IO.File]::WriteAllText(
-        (Join-Path -Path $root -ChildPath 'AGENTS.md'),
-        "# permissive project`n`nThis project trusts its agents and forbids nothing.`n",
-        [System.Text.UTF8Encoding]::new($false))
-
-    return $root
+    $out.Warnings = @($warn)
+    return $out
 }
 
 # git's own view of the tree, so test 6 can prove it left no trace under the repo.
@@ -400,53 +366,37 @@ try {
     Assert-That ($null -eq (Get-Module -Name 'claude.build.policy')) `
         'a plain force pulled no policy module into the session'
 
-    # -- 6b: -Policy against this repo. Inspector runs, the written law is counted.
-    $self = Invoke-LedgerForce -Prompt 'Write add(a, b).' -Validator 'has_function_def' `
-        -Mode 'dry-run' -SkipLedger -Policy -Verbose
-    Write-Host ("  self-inspect: evaluated={0} rules={1} halts={2}" -f
-        $self.PolicyEvaluated, $self.PolicyRuleCount, $self.PolicyHaltCount)
+    # -- 6b: -Policy against this repo refuses. It is not evaluated, it is not a warning
+    #        followed by a force, and no sibling claude.build.inspector is consulted.
+    $self = Invoke-PolicyRefusal
+    Write-Host "  -Policy: $($self.Id)"
+    Write-Host "  message: $($self.Message)"
 
-    Assert-That ([bool]$self.PolicyEvaluated) '-Policy on this repo: PolicyEvaluated is true'
-    Assert-That ($self.PolicyRuleCount -ge 1) '-Policy on this repo: PolicyRuleCount >= 1' `
-        "PolicyRuleCount=$($self.PolicyRuleCount)"
-    Assert-That ($self.PolicyPath -eq $repo)  '-Policy inspected this repo by default' `
-        "PolicyPath=$($self.PolicyPath)"
+    Assert-That ($self.Id -like 'LedgerPolicyNotImplemented,*') `
+        '-Policy on this repo refuses as LedgerPolicyNotImplemented' "got: [$($self.Id)]"
+    Assert-That ($self.Message -like 'reason=policy-not-implemented:*') `
+        'the refusal names its reason: policy-not-implemented' "got: $($self.Message)"
+    Assert-That ($self.Warnings.Count -eq 0) '-Policy wrote no warning: a refusal, not a fail-open' `
+        "warnings: $(($self.Warnings | ForEach-Object { [string]$_ }) -join ' // ')"
+    Assert-That ($self.Target -eq $repo) 'the refusal targets this repo by default' "target: $($self.Target)"
+    Assert-That ($null -eq (Get-Command -Name 'Invoke-ClaudeInspector' -ErrorAction SilentlyContinue)) `
+        '-Policy pulled no claude.build.inspector into the session'
 
-    # -- 6c: a lawful temp project that also allows Bash(*). Halt findings, but no throw.
+    # -- 6c: a lawful temp project that also allows Bash(*). Refused the same way, naming it.
     $fixture = New-PolicyFixture -Name 'bash-allow'
     Write-Host "  fixture: $fixture"
 
-    $observed = Invoke-LedgerForce -Prompt 'Write add(a, b).' -Validator 'has_function_def' `
-        -Mode 'dry-run' -SkipLedger -Policy -PolicyPath $fixture
-    Write-Host ("  fixture observe: evaluated={0} rules={1} halts={2}" -f
-        $observed.PolicyEvaluated, $observed.PolicyRuleCount, $observed.PolicyHaltCount)
+    $observed = Invoke-PolicyRefusal -Extra @{ PolicyPath = $fixture }
+    Assert-That ($observed.Id -like 'LedgerPolicyNotImplemented,*') `
+        '-Policy -PolicyPath <fixture> refuses' "got: [$($observed.Id)]"
+    Assert-That ($observed.Target -eq $fixture) 'the refusal names the fixture as its target' `
+        "target: $($observed.Target)"
 
-    Assert-That ($observed.PolicyHaltCount -ge 1) '-Policy on a lawful fixture: PolicyHaltCount >= 1' `
-        "PolicyHaltCount=$($observed.PolicyHaltCount)"
-    Assert-That (-not [string]::IsNullOrWhiteSpace($observed.Output)) `
-        '-Policy without -Halt still produced accepted output'
-
-    # -- 6d: the same fixture with -Halt. Inspector's own ErrorId, unwrapped.
-    $haltThrew = $false
-    $haltId    = ''
-    try {
-        Invoke-LedgerForce -Prompt 'Write add(a, b).' -Validator 'has_function_def' `
-            -Mode 'dry-run' -SkipLedger -Policy -Halt -PolicyPath $fixture | Out-Null
-    }
-    catch {
-        $haltThrew = $true
-        $haltId    = $_.FullyQualifiedErrorId
-        Write-Host ''
-        Write-Host '  --- TERMINATING ERROR CAUGHT (expected) ---' -ForegroundColor Yellow
-        Write-Host "  FullyQualifiedErrorId : $haltId"
-        Write-Host "  Category              : $($_.CategoryInfo.Category)"
-        Write-Host "  Message               : $($_.Exception.Message)"
-        Write-Host ''
-    }
-
-    Assert-That $haltThrew '-Policy -Halt on a lawful fixture threw'
-    Assert-That ($haltId -like 'InspectorPolicyHalt*') `
-        "-Halt surfaced Inspector's own ErrorId unwrapped" "got: $haltId"
+    # -- 6d: the same fixture with -Halt. There is no verdict to halt on, so it refuses too.
+    $halted = Invoke-PolicyRefusal -Extra @{ PolicyPath = $fixture; Halt = $true }
+    Write-Host "  -Policy -Halt: $($halted.Id)"
+    Assert-That ($halted.Id -like 'LedgerPolicyNotImplemented,*') `
+        '-Policy -Halt refuses as LedgerPolicyNotImplemented, not InspectorPolicyHalt' "got: [$($halted.Id)]"
 
     # -- 6e: -Halt on its own is a parameter error, raised before anything is spawned.
     $badThrew = $false
@@ -489,84 +439,23 @@ try {
     Assert-That ($manifestText -notmatch 'RequiredModules') `
         'Ledger.psd1 declares no RequiredModules (Inspector stays optional)'
 
-    # -- 6g: absent law must not read as clean law.
-    #        A project whose AGENTS.md was deleted reports evaluated / zero rules / zero
-    #        halts - the same thing a lawful permissive project reports - so before
-    #        PolicySourceCount, deleting one file switched -Halt off and nothing said so.
-    #        The answer is loud, never fatal: -Halt fires on law that was broken, not on
-    #        law that was never written.
+    # -- 6g: the fail-open, falsified. The removed path warned "claude.build.inspector not
+    #        found ... continuing as if -Policy were absent" and forced anyway. A command
+    #        named Invoke-ClaudeInspector that reports a clean project - the removed
+    #        resolver's first hit - must not turn the refusal into a pass either.
     Write-Host ''
-    Write-Host '  -- 6g: absent law is loud --' -ForegroundColor Cyan
+    Write-Host '  -- 6g: nothing fails open --' -ForegroundColor Cyan
 
-    $lawless     = New-LawlessFixture -Name 'lawless'
-    $lawlessWarn = $null
-    $lawlessRes  = $null
-    $lawlessThrew = $false
-    try {
-        $lawlessRes = Invoke-LedgerForce -Prompt 'Write add(a, b).' -Validator 'has_function_def' `
-            -Mode 'dry-run' -SkipLedger -Policy -Halt -PolicyPath $lawless `
-            -WarningVariable lawlessWarn -WarningAction SilentlyContinue
+    function global:Invoke-ClaudeInspector {
+        [pscustomobject]@{ Scope = 'Project'; PolicyEvaluated = $true; PolicyRuleCount = 1
+            PolicySourceCount = 1; PolicyHaltCount = 0; Findings = @() }
     }
-    catch {
-        $lawlessThrew = $true
-        Write-Host "  lawless threw: $($_.FullyQualifiedErrorId)" -ForegroundColor Red
-    }
+    try { $stubbed = Invoke-PolicyRefusal }
+    finally { Remove-Item -LiteralPath 'function:global:Invoke-ClaudeInspector' -ErrorAction SilentlyContinue }
 
-    Assert-That (-not $lawlessThrew) `
-        'absent law does not throw under -Halt (no law is not broken law)'
-
-    if (-not $lawlessThrew) {
-        Write-Host ("  lawless: evaluated={0} sources={1} rules={2} halts={3}" -f
-            $lawlessRes.PolicyEvaluated, $lawlessRes.PolicySourceCount,
-            $lawlessRes.PolicyRuleCount, $lawlessRes.PolicyHaltCount)
-
-        Assert-That ($null -ne $lawlessRes.PSObject.Properties['PolicySourceCount']) `
-            'ForceResult carries PolicySourceCount'
-        Assert-That ($lawlessRes.PolicySourceCount -eq 0) `
-            'absent law: PolicySourceCount is 0' "got: $($lawlessRes.PolicySourceCount)"
-        Assert-That ([bool]$lawlessRes.PolicyEvaluated) `
-            'absent law: PolicyEvaluated stays true (the evaluation did run)'
-        Assert-That ($lawlessRes.PolicyHaltCount -eq 0) `
-            'absent law: PolicyHaltCount is 0, so only the source count tells them apart'
-
-        $warnText = (@($lawlessWarn) | ForEach-Object { [string]$_ }) -join ' // '
-        Write-Host "  warning: $warnText"
-        Assert-That ($warnText -match 'no law sources') `
-            'absent law warned out loud' "warnings: $warnText"
-    }
-
-    # The same move by a different name: the file is there, and says nothing.
-    $blank    = New-LawlessFixture -Name 'lawless-blank' -EmptyAgents
-    $blankRes = Invoke-LedgerForce -Prompt 'Write add(a, b).' -Validator 'has_function_def' `
-        -Mode 'dry-run' -SkipLedger -Policy -Halt -PolicyPath $blank `
-        -WarningAction SilentlyContinue
-    Assert-That ($blankRes.PolicySourceCount -eq 0) `
-        'an empty AGENTS.md counts as no law source, same as a deleted one' `
-        "got: $($blankRes.PolicySourceCount)"
-
-    # The false positive a rule-count check would raise. This project wrote its law down;
-    # it just forbids nothing. It must stay quiet.
-    $permissive     = New-PermissiveFixture -Name 'permissive'
-    $permissiveWarn = $null
-    $permissiveRes  = Invoke-LedgerForce -Prompt 'Write add(a, b).' -Validator 'has_function_def' `
-        -Mode 'dry-run' -SkipLedger -Policy -Halt -PolicyPath $permissive `
-        -WarningVariable permissiveWarn -WarningAction SilentlyContinue
-    Write-Host ("  permissive: evaluated={0} sources={1} rules={2} halts={3}" -f
-        $permissiveRes.PolicyEvaluated, $permissiveRes.PolicySourceCount,
-        $permissiveRes.PolicyRuleCount, $permissiveRes.PolicyHaltCount)
-
-    Assert-That ($permissiveRes.PolicySourceCount -ge 1) `
-        'lawful-but-permissive: PolicySourceCount >= 1' "got: $($permissiveRes.PolicySourceCount)"
-    Assert-That ($permissiveRes.PolicyRuleCount -eq 0) `
-        'lawful-but-permissive: PolicyRuleCount is 0, which is why rules cannot be the test'
-    $permissiveText = (@($permissiveWarn) | ForEach-Object { [string]$_ }) -join ' // '
-    Assert-That ($permissiveText -notmatch 'no law sources') `
-        'lawful-but-permissive did NOT warn about missing law' "warnings: $permissiveText"
-
-    # And the halting fixture read real law, so the counter is not stuck at zero.
-    Assert-That ($observed.PolicySourceCount -ge 1) `
-        'a fixture with real law reports PolicySourceCount >= 1' `
-        "got: $($observed.PolicySourceCount)"
+    Assert-That ($stubbed.Id -like 'LedgerPolicyNotImplemented,*') `
+        'a clean-reporting Invoke-ClaudeInspector in the session is not consulted' "got: [$($stubbed.Id)]"
+    Assert-That ($stubbed.Warnings.Count -eq 0) 'and no warning was written on the way'
 }
 finally {
     foreach ($root in $script:TempRoots) {
@@ -915,10 +804,10 @@ catch { $haltNsThrew = $true; $haltNsId = $_.FullyQualifiedErrorId }
 
 Write-Host "  halt without -SkipLedger: $haltNsId"
 Assert-That $haltNsThrew '-Policy -Halt throws without -SkipLedger'
-Assert-That ($haltNsId -like 'InspectorPolicyHalt*') `
-    'still Inspector''s own ErrorId, unwrapped' "got: $haltNsId"
+Assert-That ($haltNsId -like 'LedgerPolicyNotImplemented*') `
+    'the refusal, not a halt: there is no verdict to halt on (D010)' "got: $haltNsId"
 Assert-That (-not (Test-Path -LiteralPath $haltLedger)) `
-    'a halt created no ledger file at all: the append never ran' $haltLedger
+    'a refusal created no ledger file at all: the append never ran' $haltLedger
 
 # ---------------------------------------------------------------- 10
 Write-Section 'TEST 10  the result must describe the run that was asked for'
