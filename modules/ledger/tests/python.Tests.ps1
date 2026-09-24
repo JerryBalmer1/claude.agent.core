@@ -201,14 +201,22 @@ Describe 'ledger python engine' -Tag 'ledger' {
             # This is tests/sandbox/fail_path.ps1's whole claim, as one It. The sandbox original
             # is kept beside this file as provenance; it cannot run here, because it imports
             # ../../src/ledger/Ledger.psd1 from the source repository's layout.
+            #
+            # "Nothing is swallowed": the snake's MAX_RETRIES event reaches the error stream BEFORE
+            # the terminating error. It is collected and asserted here, not left to leak into the
+            # run, where scripts/Measure-Modules.ps1 counts it as an exception.
             $p = Join-Path (New-TempDir) 'failpath.jsonl'
+            $streamed = [System.Collections.Generic.List[object]]::new()
             $err = {
                 Invoke-LedgerForce -Prompt 'Write a Python function add(a, b).' `
                     -Validator 'has_function_def' -MaxRetries 3 -Mode 'dry-run' -LedgerPath $p `
-                    -MockResponse 'I would rather write you a poem about addition than any code.'
+                    -MockResponse 'I would rather write you a poem about addition than any code.' 2>&1 |
+                    ForEach-Object { $streamed.Add($_) }
             } | Should -Throw -PassThru
             $err.FullyQualifiedErrorId | Should -Match '^LedgerSnakeFailed'
             $err.CategoryInfo.Category | Should -Be 'OperationStopped'
+            @($streamed | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] } |
+                ForEach-Object { $_.ToString() }) | Should -Match '^\[snake\] MAX_RETRIES: '
             $p | Should -Not -Exist -Because 'a run that never satisfied the validator has nothing to sign'
         }
 
