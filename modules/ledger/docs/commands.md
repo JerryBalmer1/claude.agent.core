@@ -301,9 +301,9 @@ Get-LedgerStatus | Format-List
 
 ```
 Protocol      : 1
-SnakeCli      : C:\__Code\____Claude.Build\claude.build.ledger\src\ledger\python\cli.py
+SnakeCli      : <repo>/modules/ledger/python/cli.py
 SnakePresent  : True
-Python        : C:\Python310\python.exe
+Python        : <the python on PATH>
 ApiKeyPresent : False
 PSVersion     : 7.6.6
 ```
