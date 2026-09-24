@@ -18,7 +18,8 @@
     The same Pester version is pinned the same way, from config/repo.json -> tooling.pester. Two
     scripts that measure the same suite under different runners are two different measurements.
 
-    Exits 1 if any test failed, if the suite ran zero tests, or if the per-file rows do not add
+    Exits 1 if any test failed, if any error record reached the error stream during the run, if
+    the suite ran zero tests, or if the per-file rows do not add
     up to Pester's own TotalCount. That last one is the check on this script rather than on the
     repository: a bucketing bug that dropped a file would otherwise print a smaller, tidier and
     entirely wrong table.
@@ -80,7 +81,12 @@ $pc.Run.PassThru       = $true
 $pc.Output.Verbosity   = 'None'
 $pc.TestResult.Enabled = $false
 
-$result = Invoke-Pester -Configuration $pc
+# An error record that reaches the error stream during a run is an exception, even when every test
+# passed: a test that meant to assert a failure and let it leak instead has asserted less than it
+# claims. 2>&1 separates them from the result, and any one of them fails the measurement.
+$streamed   = @(Invoke-Pester -Configuration $pc 2>&1)
+$exceptions = @($streamed | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+$result     = @($streamed | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] })[-1]
 
 # ---------------------------------------------------------------- bucket every test by its file
 
@@ -133,8 +139,11 @@ Write-Host 'per module  (bucket "repo" is tests/ at the repository root)'
 $byBucket | Format-Table -AutoSize -Property Name, Total, Passed, Failed, Skipped | Out-String -Width 160 | Write-Host
 
 $sum = ($byBucket | Measure-Object -Property Total -Sum).Sum
-Write-Host ("measure-modules: total={0} passed={1} failed={2} skipped={3} duration={4}" -f
-    $result.TotalCount, $result.PassedCount, $result.FailedCount, $result.SkippedCount, $result.Duration)
+Write-Host ("measure-modules: total={0} passed={1} failed={2} skipped={3} exceptions={4} duration={5}" -f
+    $result.TotalCount, $result.PassedCount, $result.FailedCount, $result.SkippedCount, $exceptions.Count, $result.Duration)
+foreach ($e in $exceptions) {
+    Write-Host "  exception: $($e.ToString())  <- $($e.InvocationInfo.ScriptName):$($e.InvocationInfo.ScriptLineNumber)"
+}
 
 if ($Json) {
     $payload = [ordered]@{
@@ -145,6 +154,7 @@ if ($Json) {
         passed     = $result.PassedCount
         failed     = $result.FailedCount
         skipped    = $result.SkippedCount
+        exceptions = $exceptions.Count
         byModule   = @($byBucket)
         byFile     = @($byFile)
     }
@@ -168,6 +178,10 @@ if ($sum -ne $result.TotalCount) {
 }
 if ($result.FailedCount -gt 0) {
     Write-Host "measure-modules: FAIL -- $($result.FailedCount) test(s) failed"
+    exit 1
+}
+if ($exceptions.Count -gt 0) {
+    Write-Host "measure-modules: FAIL -- $($exceptions.Count) error record(s) reached the error stream"
     exit 1
 }
 Write-Host 'measure-modules: PASS'
