@@ -90,6 +90,25 @@ other two as `SkipWhen:` lines. Each retirement names a decision, and each decis
 Run from `main`, the branch-flow line fails, because `main -> develop` matches no row in
 `config.flow`. That is a fact about the branch name, not the tree (F76, BACKLOG B9).
 
+## The JSON surface
+
+[`scripts/Invoke-Core.ps1`](scripts/Invoke-Core.ps1) exposes the modules to callers that are not
+PowerShell. One JSON request goes in on stdin and one JSON response comes out on stdout. Exit 0
+means `ok`, exit 1 means not, and nothing else is written to stdout. There are four operations:
+`ledger.append`, `ledger.verify`, `policy.evaluate` and `plan.validate`. The request and response
+schemas are [`schemas/core-request.schema.json`](schemas/core-request.schema.json) and
+[`schemas/core-response.schema.json`](schemas/core-response.schema.json).
+
+```text
+'{"op":"plan.validate","plan":{"id":"p1","steps":["a"],"expected_output":"x"}}' | pwsh -NoProfile -File scripts/Invoke-Core.ps1
+{"ok":true,"op":"plan.validate","result":{"valid":true,"schema":"modules/plans/schemas/plan.schema.json"}}
+```
+
+A failure's `error.code` is the module's own ErrorId, such as `LedgerBadSelf` or `LedgerFileMissing`.
+The other codes are `PlanInvalid`, `bad-request` and `sig-not-implemented`. The request schema is
+left open for a future `sig` field, but nothing verifies one yet, so a request carrying it is refused
+(D009). No MCP server wraps this yet.
+
 ## Why there is Python here
 
 There is exactly one directory of it, `modules/ledger/python/`, and it is not an oversight. The

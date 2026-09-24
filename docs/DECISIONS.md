@@ -248,3 +248,21 @@ four reds that nobody is going to fix. The other way to reach green is to edit t
 which falsifies it. **Reasoning at the time.** A measurement kept next to a claim goes stale.
 A measurement that runs against HEAD has to account for every difference by a decision you can
 point at. That is what this entry is for.
+
+## D009 — `Invoke-Core.ps1` refuses a request that carries `sig`
+
+**Decided** 2026-09-24, on `feature/json-stdio`.
+
+**The decision.** The request schema is open: it has no `additionalProperties: false`, so a future
+`sig` field can be added without a breaking schema change. But until something verifies a signature,
+`scripts/Invoke-Core.ps1` answers any request that has a `sig` key with `ok: false`,
+`error.code: sig-not-implemented` and exit 1. It doesn't ignore the field.
+
+**Enforced by** `tests/InvokeCore.Tests.ps1`: *refuses a request carrying sig as
+sig-not-implemented*, and *is open for a future sig field*. The second asserts both halves: the
+schema admits `sig`, and the schema has no `additionalProperties` key.
+
+**Cost of retiring it.** If an ignored `sig` is accepted, a caller who signs a request gets a
+success that sounds like verification and isn't. **Reasoning at the time.** A signature that is
+silently dropped is worse than no signature field at all. Signed receipts are I15. Until then,
+refusing the field is the honest answer.
