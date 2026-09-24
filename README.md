@@ -42,7 +42,7 @@ rather than here.
 none of the history: the initial commit is the one commit in this repository's life that is not a
 merge, and `docs/FINDINGS.md` F74 names every path that was not carried and why.
 
-The suite is **205 tests, 0 failed**. It was **162** at birth, so **43 net have been added since**.
+The suite is **282 tests, 0 failed**. It was **162** at birth, so **120 net have been added since**; the last 77 are `tests/PlatformDocs.Tests.ps1`.
 The source measured 188: 27 were removed and 1 was added on the way in.
 The 27 are not a regression — every one of them asserted a fact about the source repository's own
 git history, pinned commit shas as fixtures, a trailerless root commit, a grandfather exemption
@@ -56,7 +56,7 @@ to the five-name export list core actually ships. Birth fidelity to `claude.buil
 recorded at the birth commit, and re-asserting it at every HEAD would forbid core from ever
 changing its own ledger module. The first was visible in the total at 161 and invisible by 206,
 which is why it is written down in `docs/DECISIONS.md` **D002** rather than left to arithmetic. The
-second is the `206` to `205` on the line above, and is written down there anyway.
+second took the total from `206` to `205`, and is written down there anyway.
 
 `docs/plans/2026-09-22-substrate-cutover/verify.ps1` re-derives this release's claims and reports
 **15 of 19**. Four reds, all by design. Two are F70: `modules/plans/plans.psd1` and
@@ -74,8 +74,8 @@ about the branch name and not about the tree (F76, BACKLOG B9).
 | `ledger` | `modules/ledger/ledger.psd1` | `modules/ledger/tests/` | **89** |
 | `policy` | `modules/policy/policy.psd1` | `modules/policy/tests/` | **10** |
 | `plans` | `modules/plans/plans.psd1` | `modules/plans/tests/` | **12** |
-| — | the repository's own suite | `tests/` | **94** |
-| | | **total** | **205** |
+| — | the repository's own suite | `tests/` | **171** |
+| | | **total** | **282** |
 
 Every figure in that table is measured, not counted by hand. It comes out of
 [`scripts/Measure-Modules.ps1`](scripts/Measure-Modules.ps1), and
