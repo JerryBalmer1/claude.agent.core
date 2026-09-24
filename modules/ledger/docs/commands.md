@@ -1,17 +1,21 @@
 # Command reference
 
-Four exported functions and one alias, from
-[../src/ledger/Ledger.psd1](../src/ledger/Ledger.psd1):
+Five exported functions and one alias, from
+[../ledger.psd1](../ledger.psd1):
 
 ```powershell
-FunctionsToExport = @('Invoke-LedgerForce', 'Get-LedgerStatus', 'Get-LedgerVerify', 'Get-LedgerEntry')
+FunctionsToExport = @('Invoke-LedgerForce', 'Get-LedgerStatus', 'Get-LedgerVerify', 'Get-LedgerEntry', 'Add-LedgerRecord')
 AliasesToExport   = @('ledger-force')
 ```
+
+This reference covers four of the five, and the alias. `Add-LedgerRecord` is described in
+[../README.md](../README.md); it became public at `33e81e9`, and exporting it is what retired this
+file's byte pin (`docs/DECISIONS.md` **D002**, FINDINGS **F88**).
 
 Import the module by its manifest:
 
 ```powershell
-Import-Module ./src/ledger/Ledger.psd1 -Force
+Import-Module ./modules/ledger/ledger.psd1 -Force
 ```
 
 ## Conventions that apply to all four
@@ -38,7 +42,7 @@ practical notes:
 
 **`-LedgerPath` resolution** (shared by `Invoke-LedgerForce`, `Get-LedgerVerify`,
 `Get-LedgerEntry`): omitted or blank means the default, `.ledger/ledger.jsonl` under the **repo
-root**, computed from the module's own location (`src/ledger/../..`) — so it is the same file
+root**, computed from the module's own location (`modules/ledger/../..`) — so it is the same file
 regardless of your current directory. An absolute path is used as given. A relative path resolves
 against the **caller's** filesystem location, not the module's.
 
@@ -120,7 +124,7 @@ swallow them into a generic error and does not re-raise them under a Ledger id.
 ### Example
 
 ```powershell
-Import-Module ./src/ledger/Ledger.psd1 -Force
+Import-Module ./modules/ledger/ledger.psd1 -Force
 
 $r = Invoke-LedgerForce -Verbose `
     -Prompt 'Write a Python function add(a, b) that returns a + b. Code only.' `
@@ -206,7 +210,7 @@ timestamps. A **missing** file is an error.
 ### Example
 
 ```powershell
-Import-Module ./src/ledger/Ledger.psd1 -Force
+Import-Module ./modules/ledger/ledger.psd1 -Force
 Get-LedgerVerify -Verbose | Format-List
 
 # Verify a copy without touching the real one
@@ -291,15 +295,15 @@ Nothing. A missing Python or absent key is reported as data, not raised.
 ### Example
 
 ```powershell
-Import-Module ./src/ledger/Ledger.psd1 -Force
+Import-Module ./modules/ledger/ledger.psd1 -Force
 Get-LedgerStatus | Format-List
 ```
 
 ```
 Protocol      : 1
-SnakeCli      : C:\__Code\____Claude.Build\claude.build.ledger\src\ledger\python\cli.py
+SnakeCli      : <repo>/modules/ledger/python/cli.py
 SnakePresent  : True
-Python        : C:\Python310\python.exe
+Python        : <the python on PATH>
 ApiKeyPresent : False
 PSVersion     : 7.6.6
 ```

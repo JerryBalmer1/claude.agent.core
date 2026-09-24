@@ -58,19 +58,22 @@
 
 .EXAMPLE
     pwsh -NoProfile -File scripts/Measure-Baseline.ps1 `
+        -ImageBuilderPath <image-builder checkout> -LedgerRepoPath <ledger checkout> `
+        -PolicyRepoPath <policy checkout> `
         -Json docs/plans/2026-09-22-substrate-cutover/baseline.json `
         -Markdown docs/plans/2026-09-22-substrate-cutover/BASELINE.md
 #>
 [CmdletBinding()]
 param(
-    [Parameter()]
-    [string]$ImageBuilderPath = 'C:\__Code\____Claude.Build\claude.pwsh.image.builder',
+    # No default: a default here was a path on one machine (I14 PR 5 hygiene sweep).
+    [Parameter(Mandatory)]
+    [string]$ImageBuilderPath,
 
-    [Parameter()]
-    [string]$LedgerRepoPath = 'C:\__Code\____Claude.Build\claude.build.ledger',
+    [Parameter(Mandatory)]
+    [string]$LedgerRepoPath,
 
-    [Parameter()]
-    [string]$PolicyRepoPath = 'C:\__Code\____Claude.Build\claude.build.policy',
+    [Parameter(Mandatory)]
+    [string]$PolicyRepoPath,
 
     [Parameter()]
     [string[]]$Image = @('claude.pwsh.image.leash:run-01', 'claude.pwsh.image.developer:run-01'),
@@ -460,7 +463,7 @@ $result = [ordered]@{
     suites           = @($suites.Name)
     runs             = $runs
     substrate_pester = $substratePester
-    command          = "pwsh -NoProfile -File scripts/Measure-Baseline.ps1 -Json <json> -Markdown <md>"
+    command          = "pwsh -NoProfile -File scripts/Measure-Baseline.ps1 -ImageBuilderPath <path> -LedgerRepoPath <path> -PolicyRepoPath <path> -Json <json> -Markdown <md>"
 }
 
 $jsonPath = if ([System.IO.Path]::IsPathRooted($Json)) { $Json } else { Join-Path $RepoRoot $Json }

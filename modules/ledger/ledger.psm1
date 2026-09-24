@@ -1119,4 +1119,4 @@ function Get-LedgerStatus {
 New-Alias -Name 'ledger-force' -Value 'Invoke-LedgerForce' -Force
 
 Export-ModuleMember -Function 'Invoke-LedgerForce', 'Get-LedgerStatus',
-    'Get-LedgerVerify', 'Get-LedgerEntry' -Alias 'ledger-force'
+    'Get-LedgerVerify', 'Get-LedgerEntry', 'Add-LedgerRecord' -Alias 'ledger-force'

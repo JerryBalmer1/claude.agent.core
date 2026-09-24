@@ -176,9 +176,46 @@
             "required": [ "heading", "prompt" ],
             "properties": {
               "heading": { "type": "string", "minLength": 1 },
-              "prompt":  { "type": "string", "minLength": 1 }
+              "prompt":  { "type": "string", "minLength": 1 },
+              "collapsible": {
+                "type": "boolean",
+                "default": false,
+                "description": "Render the section as <details> with the heading in a <summary> instead of as a `## heading`. Absent means false. A JSON Schema default is an annotation and not a rule -- nothing fills the property in, so Generate-Policy.ps1 applies the default itself."
+              },
+              "open": {
+                "type": "boolean",
+                "default": false,
+                "description": "Only meaningful with collapsible: emit <details open> so the section starts expanded. Absent means false, which is collapsed."
+              }
             }
           }
+        }
+      }
+    },
+    "header": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The committed banner at assets/header.svg, rendered from this block. OPTIONAL: a repository with no header block renders no SVG and registers no third generated file, which is what lets a sibling repo vendor core and still opt out. DEFAULTS, applied by the generator rather than by the schema, because a JSON Schema default is an annotation and nothing writes it into the parsed object: subtitle '', palette [ '111827', '0E7490' ], shape 'rect', height 200, animation 'none'. Only title is required -- a banner with no name is decoration.",
+      "required": [ "title" ],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "subtitle": { "type": "string" },
+        "palette": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Gradient stops, left to right, as six hex digits WITHOUT the leading #. The # is omitted so the value is never mistaken for a JSON comment or a Markdown heading when it is quoted elsewhere. One stop renders a flat fill.",
+          "items": { "type": "string", "pattern": "^[0-9a-fA-F]{6}$" }
+        },
+        "shape": {
+          "type": "string",
+          "enum": [ "wave", "waving", "rect", "soft", "rounded" ],
+          "description": "The bottom edge. rect is square, rounded and soft are increasing corner radii, wave is a static wave, waving animates it."
+        },
+        "height": { "type": "integer", "minimum": 60, "maximum": 600 },
+        "animation": {
+          "type": "string",
+          "enum": [ "none", "fadeIn", "twinkling" ],
+          "description": "Applied to the text, as SMIL. fadeIn runs once and freezes; twinkling repeats."
         }
       }
     },

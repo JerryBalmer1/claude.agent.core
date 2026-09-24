@@ -1,13 +1,19 @@
 # ledger
 
 An append-only, hash-chained receipt file, and a Python retry loop that produces the things it
-records. Copied from `claude.build.ledger@d57938d` and **unchanged in behaviour** — not as a
-claim, as arithmetic: `ledger.psm1` is byte-identical to the source, and
-`tests/ledger.Tests.ps1` recomputes its git blob sha from the bytes on disk on every run.
+records. Copied from `claude.build.ledger@d57938d` and **diverged from it on purpose** since
+`33e81e9` (*"feat: export Add-LedgerRecord"*, no body change): `ledger.psm1` hashes to
+`ba9c8efa` here against the source's `37d63403`, and the whole of that difference is one
+`Export-ModuleMember` line. The byte pin came out first, at `d182cbe` — birth fidelity is a fact
+about the birth commit and is recorded there rather than re-asserted at every HEAD (**D002**, in
+the repository's `docs/DECISIONS.md`). So nothing recomputes this file's blob sha any more, and
+no row in `tests/fixtures/copied-blobs.psd1` claims one.
 
 ## What it is
 
-Four exported functions and one alias, exactly as the source module exported them:
+Five exported functions and one alias — the source module's four, plus the writer core made
+public. Measured at `ledger.psd1:9` (`FunctionsToExport`) and `ledger.psm1:1121-1122`
+(`Export-ModuleMember`), which agree:
 
 | | |
 |---|---|
@@ -15,6 +21,7 @@ Four exported functions and one alias, exactly as the source module exported the
 | `Get-LedgerVerify` | Walk the chain and prove it. Any break is a terminating error, so a returned object always means `Ok`. |
 | `Get-LedgerEntry` | Read records back as objects, oldest first, each one validated on the way out. |
 | `Get-LedgerStatus` | Where the snake is and whether it can run. |
+| `Add-LedgerRecord` | Append exactly one receipt line, holding one handle across both the tail read that learns `prev` and the write. Private in the source module; public here since `33e81e9`, because the sentinel in `claude.agent.images` was reaching it through module session state. |
 
 A record is eight keys — `ts, attempt, validator, mode, model, sha256, prev, self` — in that
 order, and the order is the schema. `self` is the sha256 of the record's own canonical payload;
@@ -69,8 +76,11 @@ the comment that explains the rule (FINDINGS F32).
 module name there stays `Ledger`; that instruction governs that repository, and it is why the
 rename happened here and not there. The rename is case-only and the copy landed at its final
 name in one step — a case-only `git mv` on a case-insensitive filesystem is a way to lose a byte
-for no gain. `ledger.psd1`'s `RootModule` is the only line that differs from the source manifest,
-and a test proves that by reversing the change and watching the source blob sha come back.
+for no gain. `ledger.psd1`'s `RootModule` was the only line the adapt commit changed. The test
+that proved that — reversing the change in memory and watching the source blob sha come back — is
+**deleted, not left failing**: core makes no copy claim about its manifests (F76), and
+`ManifestSourceSha` at the foot of `tests/fixtures/copied-blobs.psd1` is now a record of what was
+measured rather than an input to a live check.
 
 ## Provenance, and what does not run here
 

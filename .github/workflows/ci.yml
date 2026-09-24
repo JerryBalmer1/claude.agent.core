@@ -38,6 +38,13 @@ jobs:
       - shell: pwsh
         run: ./scripts/ci/Test-Runtimes.ps1
 
+  # Two steps, one check name, for the reason recorded in FINDINGS F17 — the job keys here are the
+  # required check names, and a new one branch protection has never seen is a check that can go red
+  # while the merge proceeds anyway. Test-PrBodyLinks.ps1 belongs in THIS job rather than in
+  # requires-header because both steps judge the pull request object rather than the tree, and
+  # because this job already runs only on pull_request. PR_BODY is passed as env, never interpolated
+  # into `run:`: a body is attacker-controllable text and `${{ }}` inside a command is a shell
+  # injection waiting for a backtick.
   trailer-guard:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -47,6 +54,10 @@ jobs:
           fetch-depth: 0
       - shell: pwsh
         run: ./scripts/ci/Test-Trailers.ps1 -Base '${{ github.event.pull_request.base.sha }}'
+      - shell: pwsh
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: ./scripts/ci/Test-PrBodyLinks.ps1
 
   branch-flow:
     if: github.event_name == 'pull_request'

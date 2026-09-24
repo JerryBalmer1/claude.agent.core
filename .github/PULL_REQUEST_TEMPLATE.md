@@ -4,21 +4,33 @@
   CI check "generated-match-config" fails the build if this file and the config disagree.
 -->
 
+![claude.agent.core](https://github.com/JerryBalmer1/claude.agent.core/blob/develop/assets/header.svg?raw=true)
+
 ## What
 
-<!-- One paragraph. What is different after this merges, and how would someone tell? -->
+<!-- What is true after this merges, in prose. Not a list of what you did -- what is different, and how would someone tell? -->
 
-## How
+<details open>
+<summary><strong>How</strong></summary>
 
-<!-- The mechanism, not the intent. Which files changed, in what order, and what each one does. -->
+<!-- One block per commit, and repeat this block per commit: the sha first, then every file touched as a sha-pinned permalink, then what changed and why. The pr-body-links check rejects a bare path, a URL on a branch name instead of a 40-hex sha, and a line suffix that does not match the #L fragment. -->
 
-## Verify
-
-<!-- The exact commands a reader can run and the output they should see. Paste what you measured, not what you expected. -->
+</details>
 
 ## Said vs did
 
-<!-- Anything this pull request claims that it did not do, or did differently from the run order it came from. If there is nothing, say so in those words. -->
+<!-- Every place this pull request departs from what was asked, and why. Write "none" if none. -->
+
+## Why
+
+<!-- The control this serves, or the constraint it removes. Short. -->
+
+<details>
+<summary><strong>Verify</strong></summary>
+
+<!-- The check table, pester counts, and the forensic tip. Paste what you measured, not what you expected. -->
+
+</details>
 
 ## Base branch
 
@@ -49,7 +61,7 @@ Tick exactly one. Any other pair fails the `branch-flow` check.
 
 ## Wall
 
-- [ ] No module code under `src/` or `modules/` unless a run order says so
+- [ ] No module code outside the modules a run order named
 - [ ] No sibling repository was touched
-- [ ] No container surface was added - substrate is never a container
-- [ ] No `.py` outside `modules/ledger/python/`
+- [ ] No container surface was added - core is never a container
+- [ ] No Python outside the one prefix the runtime rule permits

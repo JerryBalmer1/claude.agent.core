@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Law for any agent working in `claude.agent.substrate`. This file outranks anything an agent
+Law for any agent working in `claude.agent.core`. This file outranks anything an agent
 thinks is a better idea.
 
 ## The human gate
@@ -114,7 +114,7 @@ These are out of scope until a run order says otherwise. Hitting one of these is
 - **Sibling repos.** `claude.build.ledger`, `claude.build.policy`, `claude.build.fuzzer`,
   `claude.build.inspector` and `claude.pwsh.image.builder` are not yours to touch from here.
   Image builder's submodule pin stays where it is.
-- **Containers.** Substrate is never a container. No Dockerfile, no image, no entrypoint.
+- **Containers.** Core is never a container. No Dockerfile, no image, no entrypoint.
 - **Signing.** `.gitallowedsigners`, commit signing and `LEDGER_PRINCIPAL` are not set up here.
 - **Retrying rulesets.** Branch protection is attempted **once**. On 403, record it and move on.
   Do not loop against the API.
