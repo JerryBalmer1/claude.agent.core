@@ -803,3 +803,17 @@ names.
 No personal email address and no host name appeared in any tracked file. The `docs/claude-platform/` matches
 are documentation examples (`/Users/alice`, `settings.local.json`), not paths on any machine. History
 is not rewritten.
+
+## F96 — `policy.evaluate` returns rules and a count, and judges nothing
+
+Measured 2026-09-24 at `db12239`, which was on `main` from `2e4b776` onward. In `scripts/Invoke-Core.ps1` (lines 105-113),
+`policy.evaluate` calls `Get-PolicyRules -Path` and answers with `ruleCount`, `haltCount` and the parsed `rules`. The
+request has no field for an action, and the response has no verdict. No allow or deny is returned, and no rule is
+matched against anything. The script's own help says so at lines 30-31: *"claude.build.policy parses and does not
+enforce, and this op does not pretend otherwise."* The policy module exports one function,
+`Get-PolicyRules` (`modules/policy/policy.psd1:10`), and its README says *"It parses, never enforces"*.
+
+So the interface names an evaluation and has no enforcement behind it. A caller who reads `haltCount > 0` as
+"this action is halted" is reading a judgment the op never made. Not fixed. I14 records it and leaves it for a
+later packet. Enforcement needs a policy function that takes an action, and that is a module change and a
+decision, not a change to the wire format.
