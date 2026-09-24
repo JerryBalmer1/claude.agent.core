@@ -216,3 +216,35 @@ One detail worth keeping: `PR_BODY` is passed to the step as an environment vari
 (`.github/workflows/ci.yml:58-59`) and never interpolated into `run:`. A pull request body is
 attacker-controllable text and `${{ }}` inside a shell command is an injection waiting for a
 backtick.
+
+## D008 — `scripts/verify.ps1` verifies HEAD; the cutover's `verify.ps1` stays archived and red
+
+**Decided** 2026-09-24, on `feature/verify-green`.
+
+**The decision.** The cutover's verifier, `docs/plans/2026-09-22-substrate-cutover/verify.ps1`,
+is not edited. It is one of the files its folder's `HASHES.txt` hashes, so editing it would
+falsify the archive it belongs to. It keeps reporting **15 of 19**, and those four reds are the
+record of what moved after the release. `scripts/verify.ps1` is its successor for HEAD. It runs the same eight
+checks, adds `scripts/Measure-Modules.ps1` as a line of its own, and treats the four reds like
+this:
+
+| Archived red | Now | Why |
+|---|---|---|
+| `ledger.psd1` exports five, pin expects four | **re-pinned** to the five, `ledger.psd1:9` | `Add-LedgerRecord` was exported on purpose at `33e81e9` (D002) |
+| `plans.psd1` exports `Get-PlanSchemaPath` too | **re-pinned** to the two, `plans.psd1:10` | the Phase 7 rewrite exported it on purpose, and core was born with it at `46debc4` (cutover F70) |
+| `ledger.psm1` is not the copied blob | **retired**, `SKIP SkipWhen:retired-by-d002` | D002: the ledger module is not byte-pinned |
+| `PlanValidator.ps1` is not the copied blob | **retired**, `SKIP SkipWhen:retired-by-d008` | this entry: the Phase 7 rewrite moved these bytes on purpose (F70), and a provenance pin on a file core rewrote is a veto on the rewrite, the same argument D002 makes for the ledger |
+
+`policy.psm1` stays byte-pinned, because it has not moved.
+
+**Enforced by** `scripts/verify.ps1`, check 7 (`$expectedExports`) and check 8 (`$provenance`,
+`RetiredBy`). A retired row prints `SKIP` with its `SkipWhen:` reason, and it prints `FAIL` if
+the decision it names has no `## D00n` heading in this file. So a retirement can't outlive its
+record. The status lines in `README.md` and `docs/FINDINGS.md` are written by
+`scripts/Update-Status.ps1` from one run of `scripts/verify.ps1 -Json`, not typed.
+
+**Cost of retiring it.** Pointing the README back at the archived verifier means a reader sees
+four reds that nobody is going to fix. The other way to reach green is to edit the archive,
+which falsifies it. **Reasoning at the time.** A measurement kept next to a claim goes stale.
+A measurement that runs against HEAD has to account for every difference by a decision you can
+point at. That is what this entry is for.
