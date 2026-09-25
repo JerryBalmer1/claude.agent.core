@@ -80,7 +80,10 @@ Describe 'the push guard judges a merge by the commits it brings in (D012, F93)'
             (& git -C $script:Repo rev-parse HEAD).Trim()
         }
         function script:Judge([string]$Sha) {
-            $out = & pwsh -NoProfile -File $script:Guard -Sha $Sha -Repository $script:Repo *>&1 | Out-String
+            # The guard's exit 1 is the result under test, not an error: scripts/ci/Invoke-Tests.ps1
+            # runs with native-command errors promoted, and that would throw it away.
+            $PSNativeCommandUseErrorActionPreference = $false
+            $out =& pwsh -NoProfile -File $script:Guard -Sha $Sha -Repository $script:Repo *>&1 | Out-String
             [pscustomobject]@{ Exit = $LASTEXITCODE; Out = $out }
         }
 
