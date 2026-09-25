@@ -780,6 +780,11 @@ blocked. What is lost is the signal: a tripwire that fires on every legitimate m
 that shouldn't have happened. Not fixed. The fix is a choice between the guard and the review mode,
 and that choice belongs to a decision, not a packet.
 
+**Fixed 2026-09-25, I15 PR 2, by decision D012** (added, text above unchanged). The guard keeps the
+review mode and judges a merge by the non-merge commits it brings in. The merge commit's own
+message is exempt. The closing evidence is the `push-guard` run on the merge Jerry clicks for I15
+PR 2, and it is recorded in the promotion's forensic record.
+
 ## F94 — `scripts/verify.ps1` is not a required check
 
 D008 added `scripts/verify.ps1` as the live verifier and `scripts/Update-Status.ps1` to publish its

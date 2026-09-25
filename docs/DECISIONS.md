@@ -330,6 +330,38 @@ repositories measures the archive. The number it produced is already frozen wher
 `scripts/New-BaselineMarkdown.ps1` is unchanged. It renders from the archived `baseline.json`
 and needs no retired repository.
 
+## D012 — `push-guard` judges a merge by the commits it brings in; the merge commit's own message is exempt
+
+**Decided** 2026-09-25, on `feature/f93-push-guard-merge-button` (I15 PR 2). Origin: F93.
+
+**The decision.** A merge commit into `develop` or `main` passes `push-guard`'s trailer gate when
+every non-merge commit it brings in carries an allowed `who:` trailer. Those are the commits of
+`git rev-list --no-merges <merge> --not <first parent>`. The merge commit's own message is not
+judged. The merge gate (two or more parents) is unchanged. A merge that brings in no non-merge
+commit fails, because there is nothing on it to judge. A one-parent commit is still judged on its
+own trailer, and fails the merge gate anyway.
+
+**Why the exemption.** `review.mode` is `human`. Jerry clicks every merge into `develop` and
+`main`, and GitHub's merge button writes that message with no trailer. Judging it made the guard
+red by construction on every merge this configuration allows (F93), so a red meant nothing. The
+work in a merge is the commits it brings in, and `trailer-guard` already holds each of them to the
+trailer on the pull request. Push-guard now checks the same thing again after the push, when it is
+too late to stop it and early enough to record it.
+
+**Enforced by** `scripts/ci/Test-PushGuard.ps1:87-104`, and by `tests/PushGuard.Tests.ps1:61`,
+*the push guard judges a merge by the commits it brings in*. That test builds a synthetic repository
+in `TestDrive` (the PushGuard half of BACKLOG B11). A human-authored merge with no trailer, over two
+compliant commits, passes. The same merge over one commit without the trailer fails, and the
+commit is named. A one-parent commit fails, and so does a merge that brings in nothing. Every case
+asserts the guard's own output line, not only its exit code. The script before this entry, placed
+in a synthetic repository and run on the same kind of merge, exits 1 with *no 'who:' trailer*.
+This version exits 0 on it. Over core's history, the new rule passes 12 of the last 12
+first-parent merges on `origin/develop` and 3 of 3 on `origin/main`.
+
+**Cost of retiring it.** Push-guard goes back to red on every clicked merge, and a red that means
+nothing is ignored. **Reasoning at the time.** The trailer is a claim about who did the work. A
+merge commit made by a button does no work, and the work is in its commits.
+
 ## D013 — `policy.evaluate` judges a tool call: deny when a halt-weight rule matches, allow when nothing does
 
 **Decided** 2026-09-25, on `feature/f96-policy-evaluate-judges` (I15 PR 3). Origin: F96.
