@@ -84,13 +84,15 @@ measured rather than an input to a live check.
 
 ## Provenance, and what does not run here
 
-`tests/sandbox/` holds three suites copied byte-identical from the source repository:
-`ledger_chain.ps1` (ten tests), `forensic_chain.ps1` (eight sections), `fail_path.ps1`. **They
-are provenance, not a suite.** Each resolves the module through `../../src/ledger/`, which is
-the source repository's layout; `ledger_chain.ps1` additionally runs
-`examples/force_example.ps1`, which was not copied. They are kept because they are what the
-Pester port was written from, and a reader who wants to check the port against its oracle needs
-the oracle in the tree.
+`tests/sandbox/` holds three suites copied from the source repository: `ledger_chain.ps1` (ten
+tests), `forensic_chain.ps1` (eight sections), `fail_path.ps1`. **They are provenance, not a
+suite.** Each resolves the module through `../../src/ledger/`, which is the source repository's
+layout; `ledger_chain.ps1` additionally runs `examples/force_example.ps1`, which was not copied.
+They are kept because they are what the Pester port was written from, and a reader who wants to
+check the port against its oracle needs the oracle in the tree. Two are still byte-identical.
+`ledger_chain.ps1` is not: under D010 its TEST 6 and TEST 9 were rewritten to assert that
+`-Policy` refuses, and its pin was retired. The behaviour it now describes is proved live by the
+*-Policy refuses* Context in `tests/ledger.Tests.ps1`.
 
 `docs/` holds two documents from the source repository, byte-identical: `theory-of-operation.md`
 and `commands.md`. Any path they name is that repository's layout.

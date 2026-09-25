@@ -35,6 +35,12 @@
     #
     # docs/theory-of-operation.md stays pinned: PR #20 measured it as not stale on the export
     # axis, and it states no export list at all.
+    #
+    # tests/sandbox/ledger_chain.ps1 is absent since D010. It was pinned at
+    # 2dbcbba94168d13a7193adf1e36381a2cea14309 until -Policy stopped resolving a sibling
+    # claude.build.inspector and started refusing; its TEST 6 and TEST 9 asserted the removed
+    # pass-through and were rewritten to assert the refusal. Same move as the rows above:
+    # retire the row, do not re-pin, and drop the hard-coded count in ledger.Tests.ps1 with it.
     SourceRepo = 'claude.build.ledger'
     SourceSha  = 'd57938d1eed2b5df13435d7820826e50de30483d'
 
@@ -45,7 +51,6 @@
         @{ Path = 'python/validators.py';             Source = 'src/ledger/python/validators.py';  Sha = '8f9bbbe4c2b475154fd43510ca0b610b6711aa4d' }
         @{ Path = 'python/requirements.txt';          Source = 'requirements.txt';                 Sha = 'd7f3e260185c6ff62fb019fee20b67e88f5d6a87' }
         @{ Path = 'docs/theory-of-operation.md';      Source = 'docs/theory-of-operation.md';      Sha = '3e4579539dbb805e55720d675dd85bdc32263272' }
-        @{ Path = 'tests/sandbox/ledger_chain.ps1';   Source = 'tests/sandbox/ledger_chain.ps1';   Sha = '2dbcbba94168d13a7193adf1e36381a2cea14309' }
         @{ Path = 'tests/sandbox/forensic_chain.ps1'; Source = 'tests/sandbox/forensic_chain.ps1'; Sha = '55b8c74403f6327d60a334969f8700cf06dfbe41' }
         @{ Path = 'tests/sandbox/fail_path.ps1';      Source = 'tests/sandbox/fail_path.ps1';      Sha = '02abe8bbeeab39e45d45970cdc75d8aa05d2e0b9' }
     )

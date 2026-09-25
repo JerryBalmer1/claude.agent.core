@@ -35,14 +35,6 @@ $script:LedgerGenesis     = '0' * 64
 $script:LedgerPayloadKeys = [string[]]@('ts', 'attempt', 'validator', 'mode', 'model', 'sha256', 'prev')
 $script:LedgerRecordKeys  = [string[]]@($script:LedgerPayloadKeys + 'self')
 
-# The observer is a sibling repo, not a dependency. It is imported lazily, only under
-# -Policy, and never listed in RequiredModules: a machine without it still loads Ledger
-# and still forces output. Ledger talks to Inspector; Inspector talks to the policy
-# parser. Ledger never imports claude.build.policy.
-$script:LedgerInspectorManifest = [System.IO.Path]::GetFullPath(
-    (Join-Path -Path $script:LedgerRoot -ChildPath '..' `
-        -AdditionalChildPath 'claude.build.inspector', 'src', 'claude.build.inspector', 'claude.build.inspector.psd1'))
-
 function Get-LedgerEventProp {
     <#
     .SYNOPSIS
@@ -414,52 +406,6 @@ function Add-LedgerRecord {
     }
 }
 
-function Resolve-LedgerInspector {
-    <#
-    .SYNOPSIS
-        Find the optional claude.build.inspector module. Returns the command and the
-        manifest that supplied it, or $null.
-
-    .DESCRIPTION
-        First hit wins:
-          1. an Invoke-ClaudeInspector already loaded in this session,
-          2. the sibling manifest next to this repo.
-
-        Nothing here throws. A missing Inspector is not an error: the caller carries on
-        exactly as it does without -Policy. Ledger deliberately owns no fail-open path
-        for a missing *policy* module - that belongs to Inspector and is already there.
-    #>
-    [CmdletBinding()]
-    [OutputType([pscustomobject])]
-    param()
-
-    $cmd = Get-Command -Name 'Invoke-ClaudeInspector' -ErrorAction SilentlyContinue |
-        Select-Object -First 1
-    if ($cmd) {
-        $from = if ($cmd.Module -and $cmd.Module.Path) { $cmd.Module.Path } else { '(loaded)' }
-        Write-Debug "[ledger] inspector already loaded from $from"
-        return [pscustomobject]@{ Command = $cmd; ManifestPath = $from }
-    }
-
-    if (-not (Test-Path -LiteralPath $script:LedgerInspectorManifest -PathType Leaf)) {
-        Write-Debug "[ledger] no inspector manifest at $script:LedgerInspectorManifest"
-        return $null
-    }
-
-    try {
-        Import-Module -Name $script:LedgerInspectorManifest -ErrorAction Stop -Verbose:$false
-    }
-    catch {
-        Write-Debug "[ledger] inspector manifest failed to import: $($_.Exception.Message)"
-        return $null
-    }
-
-    $cmd = Get-Command -Name 'Invoke-ClaudeInspector' -ErrorAction SilentlyContinue |
-        Select-Object -First 1
-    if (-not $cmd) { return $null }
-    return [pscustomobject]@{ Command = $cmd; ManifestPath = $script:LedgerInspectorManifest }
-}
-
 function Invoke-LedgerForce {
     <#
     .SYNOPSIS
@@ -489,41 +435,35 @@ function Invoke-LedgerForce {
         attempts is not checked at all - see the note on it in the body.
 
     .PARAMETER Policy
-        Off by default. Ask the sibling claude.build.inspector what this project's written
-        law says before running the snake, and attach PolicyEvaluated, PolicyRuleCount,
-        PolicySourceCount and PolicyHaltCount to the result. Exactly one inspect, before
-        Python is spawned. A missing Inspector is not an error: the force behaves as if
-        -Policy were absent. A missing policy module is Inspector's fail-open, not Ledger's.
+        Off by default. Passed, it REFUSES: the force raises LedgerPolicyNotImplemented,
+        with a message that starts reason=policy-not-implemented, before Python is spawned
+        and before any receipt is written. DECISIONS D010.
 
-        PolicySourceCount is how many law files Inspector actually read. Zero with
-        PolicyEvaluated true means the project has no law left - deleted or blanked - and
-        the force warns. It does not throw: -Halt fires on law that was broken, not on law
-        that was never written.
+        -Policy asks for a judgment about this action, and nothing in core can make one yet:
+        modules/policy parses law into rules and judges nothing (FINDINGS F96). Until it can,
+        the honest answer is a refusal. It is never a warning followed by an unevaluated
+        force, and no module outside this repository is loaded to stand in for the verdict.
+
+        PolicyEvaluated, PolicyRuleCount, PolicySourceCount and PolicyHaltCount stay on the
+        result, always false / 0 / 0 / 0, because a force that returns a result was not
+        evaluated.
 
     .PARAMETER Halt
-        Requires -Policy; on its own it raises LedgerBadSettings. Passes -Halt through to
-        Inspector so a halt-weight finding raises InspectorPolicyHalt. That error is not
-        wrapped and not caught: it terminates the force before any model call and before
-        any receipt is written.
+        Requires -Policy; on its own it raises LedgerBadSettings. With -Policy it refuses
+        exactly as -Policy does: there is no verdict to halt on.
 
     .PARAMETER PolicyPath
-        Directory Inspector evaluates under -Policy. Defaults to this repo's root.
-        Passing it without -Policy raises LedgerBadSettings.
+        The directory -Policy would evaluate. Defaults to this repo's root. Passing it
+        without -Policy raises LedgerBadSettings; with -Policy it is the refusal's target.
 
     .EXAMPLE
         Invoke-LedgerForce -Prompt 'Write add(a, b).' -Validator has_function_def -Verbose
 
     .EXAMPLE
-        # -PolicyPath is spelled out on purpose. Left off, -Policy inspects this repo's own
-        # root, and this repo's settings.json allows Bash(...), which its own written law
-        # forbids - so the bare example reports halt findings about the project you are
-        # reading. Aim it at the project you actually mean.
-        Invoke-LedgerForce -Prompt 'Write add(a, b).' -Policy -PolicyPath 'C:\projects\my-app' -Verbose
-
-    .EXAMPLE
-        # Same reason, and here it matters more: pointed at this repo, -Halt throws
-        # InspectorPolicyHalt before the snake runs and the example looks broken.
-        Invoke-LedgerForce -Prompt 'Write add(a, b).' -Policy -Halt -PolicyPath 'C:\projects\my-app'
+        # Refuses. The caller learns there is no verdict, instead of reading a force that
+        # ran unevaluated as one that passed.
+        Invoke-LedgerForce -Prompt 'Write add(a, b).' -Policy
+        # LedgerPolicyNotImplemented,Invoke-LedgerForce
     #>
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -567,13 +507,13 @@ function Invoke-LedgerForce {
         # Accept the output without recording it. Use sparingly; the chain is the point.
         [switch]$SkipLedger,
 
-        # Opt in to a single Inspector policy evaluation before the snake runs.
+        # Ask for a policy verdict. Refuses as LedgerPolicyNotImplemented until core can judge (D010).
         [switch]$Policy,
 
-        # Requires -Policy. Let a halt-weight finding terminate the force.
+        # Requires -Policy, and refuses with it.
         [switch]$Halt,
 
-        # What Inspector looks at under -Policy. Default: this repo's root.
+        # The refusal's target under -Policy. Default: this repo's root.
         [string]$PolicyPath
     )
 
@@ -597,9 +537,10 @@ function Invoke-LedgerForce {
                 'PolicyPath'))
     }
 
-    # One inspect, never two, and it happens here: a halt must stop the force before a
-    # model is called and before a receipt is written. InspectorPolicyHalt is deliberately
-    # not caught and not wrapped - it keeps its own ErrorId all the way up.
+    # -Policy refuses, here, before a model is called and before a receipt is written
+    # (D010). Core's policy module parses law and judges no action (F96), so there is no
+    # verdict to give. Nothing outside this repository is loaded to supply one, and the force
+    # never carries on unevaluated: a refusal is the only answer that is not a false pass.
     $policyEvaluated   = $false
     $policyRuleCount   = 0
     $policySourceCount = 0
@@ -607,44 +548,20 @@ function Invoke-LedgerForce {
     $policyTarget      = ''
 
     if ($Policy) {
-        $policyTarget = if ([string]::IsNullOrWhiteSpace($PolicyPath)) {
+        $refusedTarget = if ([string]::IsNullOrWhiteSpace($PolicyPath)) {
             $script:LedgerRoot
         } else {
             $PolicyPath
         }
-        Write-Verbose "[ledger] policy: inspecting $policyTarget"
-
-        $inspector = Resolve-LedgerInspector
-        if ($null -eq $inspector) {
-            Write-Warning ("[ledger] policy: claude.build.inspector not found at " +
-                "$script:LedgerInspectorManifest; continuing as if -Policy were absent")
-        }
-        else {
-            Write-Verbose "[ledger] policy: inspector from $($inspector.ManifestPath)"
-            $report = @(& $inspector.Command -Path $policyTarget -Policy -Halt:$Halt |
-                Where-Object { $_.Scope -eq 'Project' }) | Select-Object -First 1
-
-            if ($null -eq $report) {
-                Write-Warning '[ledger] policy: inspector returned no Project report'
-            }
-            else {
-                $policyEvaluated = [bool]$report.PolicyEvaluated
-                $policyRuleCount = [int]$report.PolicyRuleCount
-                $policyHaltCount = [int]$report.PolicyHaltCount
-                # Read defensively. Inspector is resolved from disk at call time, so the one
-                # next door may predate PolicySourceCount; under StrictMode a direct read of
-                # a missing property is a terminating error, and a force must not die
-                # because the observer is a version behind.
-                $policySourceCount = [int](Get-LedgerEventProp $report 'PolicySourceCount' 0)
-                Write-Verbose ('[ledger] policy: evaluated={0} sources={1} rules={2} halts={3}' -f
-                    $policyEvaluated, $policySourceCount, $policyRuleCount, $policyHaltCount)
-                if ($policyEvaluated -and $policySourceCount -eq 0) {
-                    Write-Warning ("[ledger] policy: $policyTarget has no law sources; " +
-                        'evaluated nothing, so -Halt cannot fire. This is not a clean project.')
-                }
-                foreach ($finding in @($report.Findings)) { Write-Debug "[inspector] $finding" }
-            }
-        }
+        $PSCmdlet.ThrowTerminatingError(
+            [System.Management.Automation.ErrorRecord]::new(
+                [System.NotImplementedException]::new(
+                    ('reason=policy-not-implemented: -Policy asks for a verdict on this force, and ' +
+                     'core''s policy module parses law without judging any action (FINDINGS F96). ' +
+                     'Nothing was evaluated and nothing ran. Drop -Policy to force unevaluated.')),
+                'LedgerPolicyNotImplemented',
+                [System.Management.Automation.ErrorCategory]::NotImplemented,
+                $refusedTarget))
     }
 
     $exe = Get-Command -Name $PythonPath -CommandType Application -ErrorAction SilentlyContinue |

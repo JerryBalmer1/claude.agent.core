@@ -74,9 +74,9 @@ hit; on success, append one receipt.
 | `-PythonPath` | string | `python` | Must resolve to an application on `PATH` |
 | `-LedgerPath` | string | repo `.ledger/ledger.jsonl` | Where the receipt is appended |
 | `-SkipLedger` | switch | off | Accept the output, write no receipt |
-| `-Policy` | switch | off | Run one `claude.build.inspector` policy evaluation **before** the snake. See [Policy pass-through](#policy-pass-through) |
-| `-Halt` | switch | off | Requires `-Policy`. Let a halt-weight finding terminate the force with Inspector's own `InspectorPolicyHalt` |
-| `-PolicyPath` | string | repo root | Directory Inspector evaluates. Requires `-Policy` |
+| `-Policy` | switch | off | **Refuses** with `LedgerPolicyNotImplemented`, before the snake. See [-Policy refuses](#-policy-refuses) |
+| `-Halt` | switch | off | Requires `-Policy`, and refuses with it |
+| `-PolicyPath` | string | repo root | The refusal's target. Requires `-Policy` |
 
 ### Returns
 
@@ -93,12 +93,15 @@ A single `Ledger.ForceResult`:
 | `Mode` | string | `dry-run` or `live` |
 | `LedgerPath` | string | Absolute path written to; `$null` under `-SkipLedger` |
 | `LedgerSelf` | string | This receipt's `self` hash; `$null` under `-SkipLedger` |
-| `PolicyEvaluated` | bool | `$true` only when `-Policy` ran **and** Inspector found a policy module. `$false` otherwise |
-| `PolicyRuleCount` | int | Rules the parser returned for `PolicyPath`. `0` without `-Policy` |
-| `PolicyHaltCount` | int | Inspector findings that start with `policy halt:`. `0` without `-Policy` |
-| `PolicyPath` | string | Directory that was evaluated; `''` without `-Policy` |
+| `PolicyEvaluated` | bool | Always `$false`: a force that returns a result was not evaluated |
+| `PolicyRuleCount` | int | Always `0` |
+| `PolicySourceCount` | int | Always `0` |
+| `PolicyHaltCount` | int | Always `0` |
+| `PolicyPath` | string | Always `''` |
 
-The last four are additive, always present, and `false / 0 / 0 / ''` when `-Policy` was not passed.
+The last five are additive and always present. They are `false / 0 / 0 / 0 / ''` on every result,
+because `-Policy` refuses instead of returning one (D010). They stay so that the result's shape
+does not change when core can judge an action.
 **They do not reach the receipt.** The on-disk record is schema v1 — exactly eight keys — and every
 hash already written depends on that set staying frozen. The policy verdict lives on the returned
 object; the receipt it points at (`LedgerSelf`) is byte-identical in shape to every receipt before it.
@@ -107,7 +110,7 @@ object; the receipt it points at (`LedgerSelf`) is byte-identical in shape to ev
 
 `LedgerPythonMissing`, `LedgerCliMissing`, `LedgerMissingApiKey`, `LedgerSnakeFailed`,
 `LedgerNoResult`, `LedgerResultMismatch`, `LedgerOutputHashMismatch`, `LedgerAppendFailed`,
-`LedgerBadSettings`.
+`LedgerBadSettings`, `LedgerPolicyNotImplemented`.
 
 `LedgerResultMismatch` is the newest of them. The snake's `result` event echoes back the mode,
 validator and model it was told to use, and an echo that differs from the invocation terminates the
@@ -117,9 +120,9 @@ echo must match it; omit it and nothing is compared, with the receipt recording 
 rather than whatever the snake echoed. **`attempts` is not verified** — PowerShell never watched the
 retry loop, so it records the reported number and claims nothing more about it.
 
-Under `-Policy`, Inspector's own errors — `InspectorPolicyHalt`, `InspectorPathNotFound`,
-`InspectorBadSettings` — pass through **unwrapped** and keep their own ErrorId. Ledger does not
-swallow them into a generic error and does not re-raise them under a Ledger id.
+`LedgerPolicyNotImplemented` is what `-Policy` raises, with category `NotImplemented` and a
+message that starts `reason=policy-not-implemented:`. No `Inspector*` error can reach a caller any
+more: nothing here calls `claude.build.inspector`.
 
 ### Example
 
@@ -145,34 +148,26 @@ Invoke-LedgerForce -Prompt 'Return a JSON object with a name field.' `
     -MockResponse '{"name":"ok"}'
 ```
 
-### Policy pass-through
+### -Policy refuses
 
 Both switches are **off by default**, and with neither of them the force behaves exactly as it did
-in v0.1: no inspect, no policy module, no throw on a halt-weight rule.
+in v0.1.
 
-`-Policy` runs **exactly one** `Invoke-ClaudeInspector -Path <PolicyPath> -Policy`, before Python is
-spawned and before any receipt is written, and copies three counts onto the result. Ledger imports
-`claude.build.inspector` lazily for this and nothing else. It never imports `claude.build.policy`:
-Ledger talks to Inspector, Inspector talks to the parser.
+`-Policy` asks for a verdict on this force, and core cannot give one yet: `modules/policy` parses
+written law into rules and judges no action (FINDINGS F96). So `-Policy` **refuses**. It raises
+`LedgerPolicyNotImplemented` before Python is spawned and before any receipt is written, and
+nothing runs. `-Halt` and `-PolicyPath` refuse the same way. DECISIONS D010.
 
 ```powershell
-# Observe: what does this project's written law say, and does the allow list contradict it?
-$r = Invoke-LedgerForce -Prompt 'Write add(a, b).' -Mode dry-run -Policy -Verbose
-$r | Format-List PolicyEvaluated, PolicyRuleCount, PolicyHaltCount, PolicyPath
-
-# Gate: a halt-weight finding stops the force before a model is called.
-Invoke-LedgerForce -Prompt 'Write add(a, b).' -Mode dry-run -Policy -Halt
-# InspectorPolicyHalt,Invoke-ClaudeInspector
+Invoke-LedgerForce -Prompt 'Write add(a, b).' -Mode dry-run -Policy
+# LedgerPolicyNotImplemented,Invoke-LedgerForce
+# reason=policy-not-implemented: -Policy asks for a verdict on this force, ...
 ```
 
-Three things this does **not** do:
-
-- **It does not block a Claude Code agent.** `-Halt` fails the PowerShell pipeline that called it.
-  An agent already running is unaffected. If a finding matters, a human changes the settings.
-- **It does not write settings and does not install hooks.** Inspector is read-only and so is this.
-- **It does not add a second fail-open path.** A missing policy module is Inspector's fail-open,
-  already implemented there. A missing *Inspector* is Ledger's only concession: `-Policy` warns and
-  the force continues exactly as if the switch had not been passed.
+Until D010, `-Policy` resolved a sibling `claude.build.inspector` folder next to the repository.
+When that folder was missing, it wrote a warning and forced anyway, as if the switch had not been
+passed (FINDINGS F98). That path is gone. No module outside this repository is loaded, and there
+is no warning-and-continue: a caller who asks for policy either gets a verdict or gets a refusal.
 
 ---
 
