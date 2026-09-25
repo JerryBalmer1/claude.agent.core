@@ -297,3 +297,35 @@ judgment. A refusal tells the caller there is none. A warning followed by a forc
 nothing they will read. When `modules/policy` gains a function that takes an action and returns
 a verdict, this entry is replaced by one that routes `-Policy` through it, and the refusal
 becomes the path for when that function can't decide.
+
+## D011 — `scripts/Measure-Baseline.ps1` is retired: every call refuses with `reason=retired`
+
+**Decided** 2026-09-25, on `feature/retire-measure-baseline` (R1 PR 5).
+
+**The decision.** The script measured the Ledger sandbox suites inside the images
+`claude.pwsh.image.builder` shipped. Its three required inputs are checkouts of that repository,
+of `claude.build.ledger` and of `claude.build.policy`. All three are retiring. The first is
+archived at `5f71173`, and the other two were folded into this repository's `modules/`. The
+baseline it produced is `docs/plans/2026-09-22-substrate-cutover/BASELINE.md`. That file is
+archived and hashed, and it stays as the record. So the script is retired rather than repointed.
+Pointing `-ImageBuilderPath` at a clone URL and sha would fix one of three inputs and re-measure
+a layout nothing ships any more (`vendor/claude.build.ledger`, `tests/sandbox/` run in the image).
+
+The file is kept, not deleted, because `BASELINE.md` names it as the command that produced the
+baseline, and a reader should be able to open it. Its first statement after `Set-StrictMode`
+raises the terminating `MeasureBaselineRetired` (category `NotEnabled`, message starting
+`reason=retired:`). No git, docker or file operation runs. Its four path parameters lose
+`Mandatory` so that a call with no arguments reaches the refusal instead of a prompt. None
+gains a default, so F95 holds.
+
+**Enforced by** `scripts/Measure-Baseline.ps1:115` and `tests/MeasureBaseline.Tests.ps1`. The
+test runs the script in a child pwsh with no arguments, and again with the full historical
+argument set. It asserts a non-zero exit and `reason=retired`, and that no file appears in the
+working directory, including the `-Json` it was given. Against the script before this entry,
+both tests fail: one on the missing-mandatory prompt, one on `no gitlink at vendor/claude.build.ledger`.
+
+**Cost of retiring it.** The cutover's in-container baseline can't be re-measured from this
+repository. **Reasoning at the time.** A measurement script whose inputs are archived
+repositories measures the archive. The number it produced is already frozen where it belongs.
+`scripts/New-BaselineMarkdown.ps1` is unchanged. It renders from the archived `baseline.json`
+and needs no retired repository.
