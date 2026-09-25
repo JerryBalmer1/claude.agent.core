@@ -1,9 +1,11 @@
 #Requires -Version 7.4
 <#
 .SYNOPSIS
-    Measures the Ledger sandbox suites INSIDE the images claude.pwsh.image.builder ships,
-    and emits one JSON object per suite. docs/plans/2026-09-22-substrate-cutover/BASELINE.md
-    is rendered from that JSON; it is never typed.
+    RETIRED (DECISIONS D011). Every call refuses with reason=retired and does nothing else.
+    It measured the Ledger sandbox suites INSIDE the images claude.pwsh.image.builder shipped,
+    and emitted one JSON object per suite. docs/plans/2026-09-22-substrate-cutover/BASELINE.md
+    was rendered from that JSON, and it stays as the record. The body below is kept so that
+    the archived command still names a script a reader can read.
 
 .DESCRIPTION
     The README's definition of done is "image.builder's in-container suite is green at the
@@ -65,14 +67,16 @@
 #>
 [CmdletBinding()]
 param(
-    # No default: a default here was a path on one machine (I14 PR 5 hygiene sweep).
-    [Parameter(Mandatory)]
+    # No default: a default here was a path on one machine (I14 PR 5 hygiene sweep). Not
+    # Mandatory since D011, so that a call with no arguments reaches the refusal below
+    # rather than a prompt for three checkouts of repositories that are retiring.
+    [Parameter()]
     [string]$ImageBuilderPath,
 
-    [Parameter(Mandatory)]
+    [Parameter()]
     [string]$LedgerRepoPath,
 
-    [Parameter(Mandatory)]
+    [Parameter()]
     [string]$PolicyRepoPath,
 
     [Parameter()]
@@ -84,7 +88,7 @@ param(
     [Parameter()]
     [string]$SuiteRoot = 'tests/sandbox',
 
-    [Parameter(Mandatory)]
+    [Parameter()]
     [string]$Json,
 
     [Parameter()]
@@ -104,6 +108,16 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 Set-StrictMode -Version 3.0
+
+# D011: retired. Its inputs are an image.builder checkout (archived at 5f71173) and
+# checkouts of claude.build.ledger and claude.build.policy (retired into core), and the
+# baseline it produced is archived. Nothing runs past this line: no git, no docker, no file.
+$PSCmdlet.ThrowTerminatingError([System.Management.Automation.ErrorRecord]::new(
+    [System.NotSupportedException]::new(
+        'reason=retired: scripts/Measure-Baseline.ps1 is retired by DECISIONS D011. It measured images that claude.pwsh.image.builder shipped; that repository is archived at 5f71173 and the baseline it produced is docs/plans/2026-09-22-substrate-cutover/BASELINE.md.'),
+    'MeasureBaselineRetired',
+    [System.Management.Automation.ErrorCategory]::NotEnabled,
+    'scripts/Measure-Baseline.ps1'))
 
 $RepoRoot = Split-Path $PSScriptRoot -Parent
 
