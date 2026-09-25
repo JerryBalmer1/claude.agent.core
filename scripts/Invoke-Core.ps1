@@ -9,7 +9,7 @@
 
         ledger.append    -> Add-LedgerRecord    path, attempt, validator, mode, model, sha256
         ledger.verify    -> Get-LedgerVerify    path
-        policy.evaluate  -> Get-PolicyRules     path: the project whose written law is parsed
+        policy.evaluate  -> Test-PolicyAction   path: the project whose law is parsed; tool_name, tool_input
         plan.validate    -> Test-PlanStructure  plan: the plan object itself
 
     and the response is one JSON object (schemas/core-response.schema.json):
@@ -27,8 +27,12 @@
     be added later, but no signature is verified here, so accepting one would claim a check that
     did not happen.
 
-    policy.evaluate returns the rules and how many are halt-weight. claude.build.policy parses and
-    does not enforce, and this op does not pretend otherwise.
+    policy.evaluate judges one tool call - tool_name and tool_input, as a Claude Code hook receives
+    them - against the rules Get-PolicyRules parses from path. It answers decision (allow|deny),
+    matched (the rule ids that matched), haltCount (how many of those are halt-weight) and
+    ruleCount. Deny when haltCount is above zero; no match is allow (D013, F96). The answer is
+    the judgement only: nothing here stops the call, and a caller that ignores deny is not
+    refused by this op.
 
     The MCP server that would wrap this is not here.
 
@@ -103,14 +107,18 @@ try {
                 [ordered]@{ path = $v.Path; count = $v.Count; verified = [bool]$v.Ok; firstTs = $v.FirstTs; lastTs = $v.LastTs; lastSelf = $v.LastSelf }
             }
             'policy.evaluate' {
-                $rules = @(Get-PolicyRules -Path (Get-Field $request 'path'))
-                [ordered]@{
-                    ruleCount = $rules.Count
-                    haltCount = @($rules | Where-Object Weight -eq 'halt').Count
-                    rules     = @($rules | ForEach-Object {
-                        [ordered]@{ id = $_.Id; kind = $_.Kind; scope = $_.Scope; source = $_.Source; basis = $_.Basis; weight = $_.Weight; verb = $_.Verb; hash = $_.Hash }
-                    })
-                }
+                $path = Get-Field $request 'path'
+                $tool = Get-Field $request 'tool_name'
+                $toolInput = Get-Field $request 'tool_input'
+                if ($tool -isnot [string] -or $tool.Length -eq 0) { Send-Error 'bad-request' "policy.evaluate needs 'tool_name' as a non-empty string" }
+                if ($toolInput -isnot [System.Management.Automation.PSCustomObject]) { Send-Error 'bad-request' "policy.evaluate needs 'tool_input' as an object" }
+                $rules = @(Get-PolicyRules -Path $path)
+                # The rules' paths are relative to the project: the directory given, or the folder
+                # of the one file given.
+                $full = (Resolve-Path -LiteralPath $path).ProviderPath
+                $root = if (Test-Path -LiteralPath $full -PathType Container) { $full } else { Split-Path $full -Parent }
+                $d = Test-PolicyAction -Rule $rules -Root $root -ToolName $tool -ToolInput $toolInput
+                [ordered]@{ decision = $d.Decision; matched = @($d.Matched); haltCount = $d.HaltCount; ruleCount = $d.RuleCount }
             }
             'plan.validate' {
                 $null = Test-PlanStructure -Plan (Get-Field $request 'plan')

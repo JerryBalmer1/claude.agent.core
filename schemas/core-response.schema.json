@@ -20,6 +20,26 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": { "required": [ "ok", "op" ], "properties": { "ok": { "const": true }, "op": { "const": "policy.evaluate" } } },
+      "then": {
+        "properties": {
+          "result": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [ "decision", "matched", "haltCount", "ruleCount" ],
+            "properties": {
+              "decision": { "enum": [ "allow", "deny" ] },
+              "matched": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+              "haltCount": { "type": "integer", "minimum": 0 },
+              "ruleCount": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    }
+  ],
   "if": { "properties": { "ok": { "const": true } } },
   "then": { "required": [ "result" ], "not": { "required": [ "error" ] } },
   "else": { "required": [ "error" ], "not": { "required": [ "result" ] } }

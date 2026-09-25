@@ -183,9 +183,10 @@ else {
 # ------------------------------------------------------------------ 7 the manifests are what they say
 
 # Today's exports. The archive pinned four for ledger and one for plans; D008 says why these moved.
+# policy's second, Test-PolicyAction, is D013.
 $expectedExports = @{
     ledger = @('Add-LedgerRecord', 'Get-LedgerEntry', 'Get-LedgerStatus', 'Get-LedgerVerify', 'Invoke-LedgerForce')
-    policy = @('Get-PolicyRules')
+    policy = @('Get-PolicyRules', 'Test-PolicyAction')
     plans  = @('Get-PlanSchemaPath', 'Test-PlanStructure')
 }
 foreach ($name in $Modules) {

@@ -83,16 +83,47 @@ Describe 'Invoke-Core.ps1: every op, through stdin and stdout only' {
         $b.error.code | Should -BeExactly 'LedgerFileMissing'
     }
 
-    It 'policy.evaluate returns this repository''s rules and its halt count' {
-        $b = Assert-Response -Ok $true -R (Invoke-Core (ConvertTo-Request @{ op = 'policy.evaluate'; path = $script:RepoRoot }))
-        $b.result.ruleCount | Should -BeGreaterThan 0
-        $b.result.haltCount | Should -Be @($b.result.rules | Where-Object weight -eq 'halt').Count
-        @($b.result.rules)[0].id | Should -Not -BeNullOrEmpty
+    # modules/policy's own docs/do-not.md is the law here: it compiles to halt-weight path.src and
+    # path.tests (verb write) and import.* (verb import) rules. This repository's AGENTS.md compiles
+    # to one law rule with verb none, which nothing can match, so it would allow everything (D013).
+    It 'policy.evaluate denies <Name>' -ForEach @(
+        @{ Name = 'a Write under a halt-weight path';       Tool = 'Write'; In = @{ file_path = 'src/x.ps1'; content = 'x' };          Rule = 'path.src' }
+        @{ Name = 'an Edit under a halt-weight path';       Tool = 'Edit';  In = @{ file_path = 'tests/a.Tests.ps1'; old_string = 'a'; new_string = 'b' }; Rule = 'path.tests' }
+        @{ Name = 'a shell import of a halt-weight module'; Tool = 'Bash';  In = @{ command = 'pwsh -c "Import-Module claude.build.ledger"' }; Rule = 'import.claude-build-ledger' }
+    ) {
+        $b = Assert-Response -Ok $true -R (Invoke-Core (ConvertTo-Request @{
+            op = 'policy.evaluate'; path = (Join-Path $script:RepoRoot 'modules/policy'); tool_name = $Tool; tool_input = $In }))
+        $b.result.decision | Should -BeExactly 'deny'
+        @($b.result.matched) | Should -Be @($Rule)
+        $b.result.haltCount | Should -Be 1
+        $b.result.ruleCount | Should -BeGreaterThan 1
+    }
+
+    It 'policy.evaluate allows <Name>, and says nothing matched' -ForEach @(
+        @{ Name = 'a Write no rule names';                     Tool = 'Write'; In = @{ file_path = 'README.md'; content = 'Do not import Ledger.' } }
+        @{ Name = 'a Read of a halt-weight path';              Tool = 'Read';  In = @{ file_path = 'src/x.ps1' } }
+        @{ Name = 'a Write outside the project root';          Tool = 'Write'; In = @{ file_path = '../src/x.ps1'; content = 'x' } }
+    ) {
+        $b = Assert-Response -Ok $true -R (Invoke-Core (ConvertTo-Request @{
+            op = 'policy.evaluate'; path = (Join-Path $script:RepoRoot 'modules/policy'); tool_name = $Tool; tool_input = $In }))
+        $b.result.decision | Should -BeExactly 'allow'
+        @($b.result.matched).Count | Should -Be 0
+        $b.result.haltCount | Should -Be 0
     }
 
     It 'policy.evaluate on a path that is not there carries policy''s ErrorId' {
-        $b = Assert-Response -Ok $false -R (Invoke-Core (ConvertTo-Request @{ op = 'policy.evaluate'; path = (Join-Path $script:Temp 'nowhere') }))
+        $b = Assert-Response -Ok $false -R (Invoke-Core (ConvertTo-Request @{
+            op = 'policy.evaluate'; path = (Join-Path $script:Temp 'nowhere'); tool_name = 'Write'; tool_input = @{ file_path = 'x' } }))
         $b.error.code | Should -Match '^Policy'
+    }
+
+    It 'policy.evaluate refuses <Name> as bad-request' -ForEach @(
+        @{ Name = 'no tool_input';        Stdin = '{"op":"policy.evaluate","path":".","tool_name":"Write"}' }
+        @{ Name = 'no tool_name';         Stdin = '{"op":"policy.evaluate","path":".","tool_input":{}}' }
+        @{ Name = 'a string tool_input';  Stdin = '{"op":"policy.evaluate","path":".","tool_name":"Write","tool_input":"src/x"}' }
+        @{ Name = 'an empty tool_name';   Stdin = '{"op":"policy.evaluate","path":".","tool_name":"","tool_input":{}}' }
+    ) {
+        (Assert-Response -Ok $false -R (Invoke-Core $Stdin)).error.code | Should -BeExactly 'bad-request'
     }
 
     It 'plan.validate: a valid plan is valid, and an invalid one is PlanInvalid naming the fault' {
@@ -119,7 +150,7 @@ Describe 'The request and response schemas' {
     It 'the request schema accepts <_>' -ForEach @(
         '{"op":"ledger.append","path":"c.jsonl","attempt":1,"validator":"v","mode":"m","model":"x","sha256":"abababababababababababababababababababababababababababababababab"}'
         '{"op":"ledger.verify","path":"c.jsonl"}'
-        '{"op":"policy.evaluate","path":"."}'
+        '{"op":"policy.evaluate","path":".","tool_name":"Write","tool_input":{"file_path":"src/x.ps1"}}'
         '{"op":"plan.validate","plan":{"id":"p"}}'
     ) {
         Test-Json -Json $_ -SchemaFile $script:Request | Should -BeTrue
@@ -128,6 +159,8 @@ Describe 'The request and response schemas' {
     It 'the request schema rejects <_>' -ForEach @(
         '{"op":"ledger.delete"}'
         '{"op":"ledger.verify"}'
+        '{"op":"policy.evaluate","path":"."}'
+        '{"op":"policy.evaluate","path":".","tool_name":"Write","tool_input":"src/x.ps1"}'
         '{"op":"ledger.append","path":"c","attempt":1,"validator":"v","mode":"m","model":"x","sha256":"not-hex"}'
         '{"path":"c.jsonl"}'
     ) {
@@ -137,6 +170,13 @@ Describe 'The request and response schemas' {
     It 'is open for a future sig field: the schema admits it, and Invoke-Core.ps1 refuses it until it is implemented' {
         Test-Json -Json '{"op":"ledger.verify","path":"c.jsonl","sig":"reserved"}' -SchemaFile $script:Request | Should -BeTrue
         (Get-Content -LiteralPath $script:Request -Raw | ConvertFrom-Json).PSObject.Properties.Name | Should -Not -Contain 'additionalProperties'
+    }
+
+    It 'the response schema holds a policy.evaluate result to decision, matched, haltCount and ruleCount' {
+        Test-Json -Json '{"ok":true,"op":"policy.evaluate","result":{"decision":"deny","matched":["path.src"],"haltCount":1,"ruleCount":14}}' -SchemaFile $script:Response | Should -BeTrue
+        Test-Json -Json '{"ok":true,"op":"policy.evaluate","result":{"decision":"maybe","matched":[],"haltCount":0,"ruleCount":1}}' -SchemaFile $script:Response -ErrorAction SilentlyContinue | Should -BeFalse
+        # The shape before D013: rules and a count, and no verdict.
+        Test-Json -Json '{"ok":true,"op":"policy.evaluate","result":{"ruleCount":1,"haltCount":1,"rules":[]}}' -SchemaFile $script:Response -ErrorAction SilentlyContinue | Should -BeFalse
     }
 
     It 'the response schema forbids a result and an error together' {
