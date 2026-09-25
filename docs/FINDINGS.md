@@ -818,7 +818,10 @@ So the interface names an evaluation and has no enforcement behind it. A caller 
 later packet. Enforcement needs a policy function that takes an action, and that is a module change and a
 decision, not a change to the wire format.
 
-## F97 — core `-Policy` failed open to a sibling folder since `46debc4`
+## F98 — core `-Policy` failed open to a sibling folder since `46debc4`
+
+Numbered F98, not F97: finding numbers run across repositories, and `claude.agent.images`
+`FINDINGS.md` already holds F97, *"numbered after core's F96, as Jerry directed"*.
 
 Measured 2026-09-24 (R1 PR 1). From core's birth commit
 [`46debc4`](https://github.com/JerryBalmer1/claude.agent.core/commit/46debc479752fe293f69eba7b7e1eacb085d135e)

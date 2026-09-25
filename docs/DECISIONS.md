@@ -277,7 +277,7 @@ already in the session or as a sibling folder at `<repo>/../claude.build.inspect
 `LedgerPolicyNotImplemented` (category `NotImplemented`, message starting
 `reason=policy-not-implemented:`) before Python is spawned and before any receipt is written.
 `-Halt` and `-PolicyPath` refuse with it. A missing module is never answered with a warning
-followed by a force. That was the removed path, and F97 records it.
+followed by a force. That was the removed path, and F98 records it.
 
 **Enforced by** `modules/ledger/ledger.psm1:550-563`, and by the Context *-Policy refuses as
 policy-not-implemented, and nothing fails open (D010)* at `modules/ledger/tests/ledger.Tests.ps1:1079`.

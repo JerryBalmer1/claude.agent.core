@@ -166,7 +166,7 @@ Invoke-LedgerForce -Prompt 'Write add(a, b).' -Mode dry-run -Policy
 
 Until D010, `-Policy` resolved a sibling `claude.build.inspector` folder next to the repository.
 When that folder was missing, it wrote a warning and forced anyway, as if the switch had not been
-passed (FINDINGS F97). That path is gone. No module outside this repository is loaded, and there
+passed (FINDINGS F98). That path is gone. No module outside this repository is loaded, and there
 is no warning-and-continue: a caller who asks for policy either gets a verdict or gets a refusal.
 
 ---
