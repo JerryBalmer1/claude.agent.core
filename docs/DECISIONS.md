@@ -329,3 +329,58 @@ repository. **Reasoning at the time.** A measurement script whose inputs are arc
 repositories measures the archive. The number it produced is already frozen where it belongs.
 `scripts/New-BaselineMarkdown.ps1` is unchanged. It renders from the archived `baseline.json`
 and needs no retired repository.
+
+## D013 — `policy.evaluate` judges a tool call: deny when a halt-weight rule matches, allow when nothing does
+
+**Decided** 2026-09-25, on `feature/f96-policy-evaluate-judges` (I15 PR 3). Origin: F96.
+
+**The decision.** A `policy.evaluate` request carries `path` (the project whose law is parsed),
+`tool_name` and `tool_input`, the two fields a Claude Code hook receives. The response is
+`decision` (`allow` or `deny`), `matched` (the ids of the rules that matched, in rule order),
+`haltCount` (how many of those are halt-weight) and `ruleCount` (how many rules were judged). The
+decision is **deny when any matched rule is halt-weight**. **No match is allow**, and so is a match
+of only `warn` or `log` rules. Those are still listed in `matched`.
+
+A rule matches only through its verb, because the verb is the only part of a rule that names a kind
+of action:
+
+- `write`, from a path rule. Matches `Write`, `Edit`, `MultiEdit` or `NotebookEdit` whose `file_path`
+  or `notebook_path` is the rule's path or under it, relative to the project root. The root is the
+  directory given, or the folder of the one file given. A path outside the root is not judged.
+- `import`, from a module rule. Matches when one line of code names the module next to an import
+  keyword. The code is a `Bash` or `PowerShell` command, or what a write tool puts into a `.ps1`,
+  `.psm1`, `.psd1` or `.py` file. A markdown file that says "do not import Ledger" is the law, not
+  an import, and is allowed.
+- `none`, from law and errorid rules. A sentence has nothing to match against an action, so these
+  never match.
+
+**Why allow on no match.** The law is parsed from prose, and v0's parser (`policy.psm1`, unchanged,
+blob-pinned by `scripts/verify.ps1:212`) emits most rules with verb `none`. Core's own `AGENTS.md`
+compiles to exactly one rule, and it has verb `none`. Deny-by-default would deny every call in every
+project the parser can't read, which leaves nothing to tell apart. The fail-closed answer belongs to
+the caller that enforces. The images sentinel already denies on every path that isn't an explicit
+allow.
+
+**What it does not see.** A shell command that writes a file (`Set-Content src/x`, `echo > src/x`)
+is text, and v0 doesn't parse shell, so a path rule doesn't match it. That is a named gap, not a
+pass.
+
+**Where it lives.** `Test-PolicyAction`, in `modules/policy/evaluate.psm1:66`. That file is the
+manifest's `RootModule` and `policy.psm1` its `NestedModules`. `policy.psm1` calls
+`Export-ModuleMember` for `Get-PolicyRules` alone, so as root it would hide a nested module's function,
+and it is the byte-identical copy, so it isn't edited. `scripts/Invoke-Core.ps1:109-122` validates
+the two fields and calls the function.
+
+**Enforced by** `modules/policy/tests/evaluate.Tests.ps1:23`, *Test-PolicyAction*: eight deny cases,
+eight allow cases, the no-matchable-rule case and the warn-weight case, all against the module's own
+`docs/do-not.md`, with the rules they rely on asserted as a precondition. Also by
+`tests/InvokeCore.Tests.ps1:89` onward, the round trip through stdin and stdout: three denies, three
+allows, the missing path, and four bad requests. Every response is validated against
+`schemas/core-response.schema.json`, which now holds a `policy.evaluate` result to exactly these
+four fields. The request schema requires `tool_name` and `tool_input`. The pre-D013 script, asked
+about one `Write` to `src/x.ps1`, answered `ruleCount=14 haltCount=14` and no decision. This one
+answers `deny`, `["path.src"]`, `1`, `14`.
+
+**Cost of retiring it.** `policy.evaluate` goes back to a rule count that reads like a verdict
+(F96). **Reasoning at the time.** An op named *evaluate* has to return an evaluation. The narrowest
+honest one matches what the rules can express and says plainly what they can't.

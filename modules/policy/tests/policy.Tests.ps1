@@ -95,13 +95,15 @@ AfterAll {
 
 Describe 'the policy module, ported from the sandbox suite' -Tag 'policy' {
 
-    It 'check 1 -- the manifest loads and Get-PolicyRules is the only export' {
+    It 'check 1 -- the manifest loads and exports Get-PolicyRules and Test-PolicyAction, nothing else' {
+        # The original check pinned Get-PolicyRules as the only export. D013 adds Test-PolicyAction
+        # from modules/policy/evaluate.psm1; its own cases are in evaluate.Tests.ps1, not here.
         Get-Command -Name 'Get-PolicyRules' -ErrorAction SilentlyContinue | Should -Not -BeNullOrEmpty
 
         $module = Get-Module -Name 'policy'
         $module | Should -Not -BeNullOrEmpty
         $module.Version.ToString() | Should -Be '0.2.0'
-        (@($module.ExportedFunctions.Keys) -join ',') | Should -Be 'Get-PolicyRules'
+        (@($module.ExportedFunctions.Keys | Sort-Object) -join ',') | Should -Be 'Get-PolicyRules,Test-PolicyAction'
         $module.PowerShellVersion.ToString() | Should -Be '7.4'
     }
 

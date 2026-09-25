@@ -29,7 +29,14 @@
     },
     {
       "if": { "properties": { "op": { "const": "policy.evaluate" } } },
-      "then": { "required": [ "path" ], "properties": { "path": { "type": "string", "minLength": 1 } } }
+      "then": {
+        "required": [ "path", "tool_name", "tool_input" ],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "tool_name": { "type": "string", "minLength": 1 },
+          "tool_input": { "type": "object" }
+        }
+      }
     },
     {
       "if": { "properties": { "op": { "const": "plan.validate" } } },

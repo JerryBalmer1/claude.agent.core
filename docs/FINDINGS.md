@@ -818,6 +818,14 @@ So the interface names an evaluation and has no enforcement behind it. A caller 
 later packet. Enforcement needs a policy function that takes an action, and that is a module change and a
 decision, not a change to the wire format.
 
+**Fixed 2026-09-25, I15 PR 3, by decision D013** (added, text above unchanged). `policy.evaluate` takes
+`tool_name` and `tool_input` and answers `decision`, `matched`, `haltCount` and `ruleCount`. The function
+behind it is `Test-PolicyAction` in `modules/policy/evaluate.psm1`. The hazard named above was measured before
+the fix. Asked about one `Write` to `src/x.ps1` against `modules/policy`'s law, the old op answered
+`ruleCount=14 haltCount=14` with no verdict. Every rule in that law is halt-weight, so a caller reading
+`haltCount > 0` as a verdict would have halted every call, a `Read` included. The new op answers `deny`,
+`matched=["path.src"]`, `haltCount=1`. The images sentinel still decides with its own policy. F100 records that.
+
 ## F98 — core `-Policy` failed open to a sibling folder since `46debc4`
 
 Numbered F98, not F97: finding numbers run across repositories, and `claude.agent.images`
@@ -854,3 +862,17 @@ disk. That rename failed with *"The process cannot access the file because it is
 another process"*, because the folder is open in the editor, so the throwaway-root copy stands
 in for it. `modules/ledger/docs/theory-of-operation.md:205-207` still describes the removed
 pass-through. It is a byte-pinned source document and isn't edited here.
+
+## F100 — the images sentinel does not call `policy.evaluate`, so core's verdict and the image's can disagree
+
+Measured 2026-09-25 against `claude.agent.images` `origin/develop` `c8a84bb`. The PreToolUse sentinel,
+`hooks/sentinel.ps1`, gets its verdict from `hooks/policy.ps1`, which `config/sentinel.json:5` names
+(`"policy": "policy.ps1"`). It doesn't call `scripts/Invoke-Core.ps1` or `Test-PolicyAction`. After D013,
+core's `policy.evaluate` judges a tool call against a project's written law. The image judges the same call
+against its own list. Nothing holds the two to the same answer, so a call core would deny can be allowed in
+the image, and the other way round.
+
+Not switched in I15. The I15 run order says the sentinel does not move to `policy.evaluate` in this packet and
+that this is recorded as a finding. The switch would change what the leash image enforces. That needs its
+own PR in `claude.agent.images`, a vendor pin that carries D013, and a decision about which law the sentinel
+reads.
