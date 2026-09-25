@@ -25,9 +25,13 @@
        not come from a pull request. An octopus merge has more than two parents and still passes:
        it is a merge, and a merge is not a direct push.
 
-    2. It carries a `who:` trailer from the allowed vocabulary. The automerge workflow writes
-       `who: claude` into every merge commit body it creates, so a merge commit without one was
-       not made by the automation either.
+    2. The work carries a `who:` trailer from the allowed vocabulary. On a MERGE, the commits
+       judged are the non-merge commits it brings in - `git rev-list --no-merges <merge> --not
+       <first parent>` - and every one of them must carry the trailer. The merge commit's own
+       message is EXEMPT (D012): with review.mode `human` the merge is Jerry's click on GitHub's
+       merge button, and GitHub writes that message without a trailer. Judging it made this guard
+       red on every legitimate merge (F93). A merge that brings in no non-merge commit fails:
+       there is nothing on it to judge. On a one-parent commit, the commit itself is judged.
 
     The grandfather file is DELIBERATELY NOT CONSULTED. config/trailer-grandfather.txt exempts
     commits inherited from before the guard existed, which is a statement about history. This
@@ -39,7 +43,11 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Sha = 'HEAD'
+    [string]$Sha = 'HEAD',
+    # The repository whose commit is judged. The rules are always read from this script's own
+    # config/repo.json; the parameter exists so tests/PushGuard.Tests.ps1 can judge synthetic
+    # repositories (BACKLOG B11) instead of pinning live shas (F78).
+    [string]$Repository
 )
 
 $ErrorActionPreference = 'Stop'
@@ -50,8 +58,9 @@ $RepoRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $config   = (Get-Content -LiteralPath (Join-Path $RepoRoot 'config/repo.json') -Raw | ConvertFrom-Json -Depth 20)
 $key      = $config.trailer.key
 $allowed  = @($config.trailer.allowed)
+if (-not $Repository) { $Repository = $RepoRoot }
 
-Push-Location $RepoRoot
+Push-Location $Repository
 try {
     $full    = (& git rev-parse $Sha | Out-String).Trim()
     $subject = (& git log -1 --format='%s' $full | Out-String).Trim()
@@ -60,7 +69,7 @@ try {
 
     Write-Host "push-guard: commit $($full.Substring(0, 8))  $subject"
     Write-Host "push-guard: parents $($parents.Count) [$($parents | ForEach-Object { $_.Substring(0, 8) })]"
-    Write-Host "push-guard: ${key}: '$who'  (allowed: $($allowed -join ', '))"
+    Write-Host "push-guard: ${key}: '$who'  (allowed: $($allowed -join ', '))$(if ($parents.Count -ge 2) { ' - exempt on a merge (D012)' })"
     Write-Host ''
 
     # Both gates are evaluated before either is reported. A guard that stops at the first
@@ -75,8 +84,26 @@ try {
         Write-Host "  OK    merge commit, $($parents.Count) parents"
     }
 
-    if ([string]::IsNullOrWhiteSpace($who)) {
-        $failures.Add("no '${key}:' trailer - automerge writes one into every merge commit it creates, so this was not made by the automation")
+    if ($parents.Count -ge 2) {
+        $brought = @(& git rev-list --no-merges $full --not $parents[0])
+        $bad = @(foreach ($c in $brought) {
+            $w = (& git log -1 --format="%(trailers:key=$key,valueonly)" $c | Out-String).Trim()
+            if ($allowed -notcontains $w) {
+                "$($c.Substring(0, 8)) ${key}: '$w' -- $((& git log -1 --format='%s' $c | Out-String).Trim())"
+            }
+        })
+        if ($brought.Count -eq 0) {
+            $failures.Add("the merge brings in no non-merge commit, so no trailer can be judged")
+        }
+        elseif ($bad.Count -gt 0) {
+            $failures.Add("$($bad.Count) of $($brought.Count) commit(s) the merge brings in lack an allowed '${key}:' trailer: $($bad -join '; ')")
+        }
+        else {
+            Write-Host "  OK    ${key}: on all $($brought.Count) non-merge commit(s) the merge brings in"
+        }
+    }
+    elseif ([string]::IsNullOrWhiteSpace($who)) {
+        $failures.Add("no '${key}:' trailer")
     }
     elseif ($allowed -notcontains $who) {
         $failures.Add("${key}: '$who' is not in the allowed vocabulary [$($allowed -join ', ')]")
